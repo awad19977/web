@@ -81,7 +81,10 @@ async function registerRoutes() {
 
   for (const routeFile of routeFiles) {
     try {
-      const route = await import(/* @vite-ignore */ `${routeFile}?update=${Date.now()}`);
+      console.log(`Registering route: ${routeFile}`);
+      // Ensure the routeFile is a valid file URL and inside the project root
+      const routeFileUrl = routeFile.startsWith('file://') ? routeFile : `file://${routeFile}`;
+      const route = await import(/* @vite-ignore */ routeFileUrl);
 
       const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
       for (const method of methods) {
@@ -91,7 +94,7 @@ async function registerRoutes() {
             const honoPath = `/${parts.map(({ pattern }) => pattern).join('/')}`;
             const handler: Handler = async (c) => {
               const params = c.req.param();
-              if (import.meta.env.DEV) {
+              if ((import.meta as any).env?.DEV) {
                 const updatedRoute = await import(
                   /* @vite-ignore */ `${routeFile}?update=${Date.now()}`
                 );
@@ -135,13 +138,13 @@ async function registerRoutes() {
 await registerRoutes();
 
 // Hot reload routes in development
-if (import.meta.env.DEV) {
-  import.meta.glob('../src/app/api/**/route.js', {
+if ((import.meta as any).env?.DEV) {
+  (import.meta as any).glob('../src/app/api/**/route.js', {
     eager: true,
   });
-  if (import.meta.hot) {
-    import.meta.hot.accept((newSelf) => {
-      registerRoutes().catch((err) => {
+  if ((import.meta as any).hot) {
+    (import.meta as any).hot.accept((newSelf: any) => {
+      registerRoutes().catch((err: any) => {
         console.error('Error reloading routes:', err);
       });
     });

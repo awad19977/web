@@ -15,3 +15,9 @@ declare module '@auth/create/react' {
 	import { SessionProvider } from '@auth/react';
 	export { SessionProvider };
 }
+
+declare module '*.jsx' {
+	import type { ComponentType } from 'react';
+	const Component: ComponentType<Record<string, unknown>>;
+	export default Component;
+}

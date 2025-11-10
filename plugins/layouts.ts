@@ -23,7 +23,7 @@ export interface HierarchicalLayoutOptions {
   srcRoots?: string[];
 }
 
-const DEFAULT_PAGE_PATTERN = /\/page\.(jsx?)$/;
+const DEFAULT_PAGE_PATTERN = /\/page\.(?:t|j)sx$/;
 const DEFAULT_LAYOUT_FILES = ['layout.jsx'];
 const DEFAULT_PARAM_PATTERN = /\[(\.{3})?([^\]]+)\]/g;
 const NO_LAYOUT_QUERY = '?noLayout.jsx';

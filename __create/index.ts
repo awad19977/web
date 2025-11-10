@@ -76,7 +76,9 @@ if (process.env.AUTH_SECRET) {
   app.use(
     '*',
     initAuthConfig((c) => ({
+      basePath: '/api/auth',
       secret: c.env.AUTH_SECRET,
+      url: process.env.AUTH_URL || 'http://localhost:4000',
       pages: {
         signIn: '/account/signin',
         signOut: '/account/logout',
@@ -96,20 +98,20 @@ if (process.env.AUTH_SECRET) {
       cookies: {
         csrfToken: {
           options: {
-            secure: true,
-            sameSite: 'none',
+           secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
           },
         },
         sessionToken: {
           options: {
-            secure: true,
-            sameSite: 'none',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
           },
         },
         callbackUrl: {
           options: {
-            secure: true,
-            sameSite: 'none',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
           },
         },
       },
@@ -227,12 +229,14 @@ app.all('/integrations/:path{.+}', async (c, next) => {
   });
 });
 
-app.use('/api/auth/*', async (c, next) => {
-  if (isAuthAction(c.req.path)) {
-    return authHandler()(c, next);
-  }
-  return next();
-});
+// app.use('/api/auth/*', async (c, next) => {
+//   if (isAuthAction(c.req.path)) {
+//     return authHandler()(c, next);
+//   }
+//   return next();
+// });
+app.use('/api/auth/*', authHandler());
+
 app.route(API_BASENAME, api);
 
 export default await createHonoServer({
