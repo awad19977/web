@@ -67,6 +67,35 @@ export function useStockManagement() {
     },
   });
 
+  const updateStockMutation = useMutation({
+    mutationFn: async (stockData) => {
+      const { id, ...payload } = stockData;
+      const response = await fetch(`/api/stock/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error("Failed to update stock");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stock"] });
+    },
+  });
+
+  const deleteStockMutation = useMutation({
+    mutationFn: async (stockId) => {
+      const response = await fetch(`/api/stock/${stockId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete stock");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stock"] });
+    },
+  });
+
   return {
     stock,
     isLoading,
@@ -74,5 +103,9 @@ export function useStockManagement() {
     addStockLoading: addStockMutation.isLoading,
     purchaseStock: purchaseStockMutation.mutate,
     purchaseStockLoading: purchaseStockMutation.isLoading,
+    updateStock: updateStockMutation.mutate,
+    updateStockLoading: updateStockMutation.isLoading,
+    deleteStock: deleteStockMutation.mutate,
+    deleteStockLoading: deleteStockMutation.isLoading,
   };
 }

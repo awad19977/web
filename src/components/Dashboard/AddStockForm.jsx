@@ -1,17 +1,40 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-export function AddStockForm({ onClose, onSubmit, loading }) {
+export function AddStockForm({
+  onClose,
+  onSubmit,
+  loading,
+  initialStock = null,
+  mode = "create",
+}) {
+  const isEditing = mode === "edit";
+
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    unit: "",
-    unit_cost: "",
-    supplier: "",
-    current_quantity: "0",
+    name: initialStock?.name ?? "",
+    description: initialStock?.description ?? "",
+    unit: initialStock?.base_unit?.name ?? initialStock?.unit ?? "",
+    unit_cost: initialStock?.unit_cost ? String(initialStock.unit_cost) : "",
+    supplier: initialStock?.supplier ?? "",
+    current_quantity: initialStock?.current_quantity
+      ? String(initialStock.current_quantity)
+      : "0",
   });
-  const [baseUnitId, setBaseUnitId] = useState("");
-  const [conversions, setConversions] = useState([]);
+  const [baseUnitId, setBaseUnitId] = useState(initialStock?.base_unit?.id ?? "");
+  const [conversions, setConversions] = useState(() =>
+    initialStock
+      ? (initialStock.units ?? [])
+          .filter((unit) => !unit.is_base)
+          .map((unit) => ({
+            unitId: unit.id ?? unit.unit_id ?? "",
+            factor: unit.conversion_factor
+              ? String(unit.conversion_factor)
+              : unit.factor
+                ? String(unit.factor)
+                : "",
+          }))
+      : [],
+  );
 
   const { data: availableUnits = [], isLoading: unitsLoading } = useQuery({
     queryKey: ["stockUnits"],
@@ -28,8 +51,15 @@ export function AddStockForm({ onClose, onSubmit, loading }) {
 
   useEffect(() => {
     if (!baseUnitOptions.length) return;
-    setBaseUnitId((current) => current || baseUnitOptions[0].id);
-  }, [baseUnitOptions]);
+    setBaseUnitId((current) => {
+      if (current) return current;
+      const preferred = initialStock?.base_unit?.id;
+      if (preferred && baseUnitOptions.some((unit) => unit.id === preferred)) {
+        return preferred;
+      }
+      return baseUnitOptions[0]?.id ?? "";
+    });
+  }, [baseUnitOptions, initialStock?.base_unit?.id]);
 
   const selectedBaseUnit = useMemo(
     () => baseUnitOptions.find((unit) => unit.id === baseUnitId) ?? null,
@@ -77,7 +107,7 @@ export function AddStockForm({ onClose, onSubmit, loading }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!selectedBaseUnit) {
-      setFormError("Select or create a base unit first in the Unit Catalog.");
+      setFormError("Select a base unit from the Unit Catalog before continuing.");
       return;
     }
     setFormError("");
@@ -111,6 +141,10 @@ export function AddStockForm({ onClose, onSubmit, loading }) {
       baseUnit: { id: baseUnitId },
       conversions: preparedConversions,
     };
+
+    if (initialStock?.id) {
+      payload.id = initialStock.id;
+    }
 
     onSubmit(payload);
   };
@@ -152,11 +186,20 @@ export function AddStockForm({ onClose, onSubmit, loading }) {
     });
   };
 
+  const title = isEditing ? "Edit Stock Item" : "Add Stock Item";
+  const submitLabel = isEditing
+    ? loading
+      ? "Saving..."
+      : "Save Changes"
+    : loading
+      ? "Adding..."
+      : "Add Stock";
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-[#1E1E1E] rounded-lg p-6 w-full max-w-md mx-4">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-          Add Stock Item
+          {title}
         </h3>
         {formError && (
           <div className="rounded-md border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
@@ -343,7 +386,7 @@ export function AddStockForm({ onClose, onSubmit, loading }) {
               disabled={loading || !selectedBaseUnit}
               className="flex-1 px-4 py-2 bg-[#18B84E] dark:bg-[#16A249] text-white rounded-md hover:bg-[#16A249] dark:hover:bg-[#14D45D] disabled:opacity-50"
             >
-              {loading ? "Adding..." : "Add Stock"}
+              {submitLabel}
             </button>
           </div>
         </form>

@@ -105,6 +105,10 @@ export async function upsertStockUnits({
       continue;
     }
 
+    const isBaseUnit = Boolean(
+      conversion?.is_base ?? conversion?.isBase ?? conversion?.isBaseUnit,
+    );
+
     const unitRecord = await getUnitById(runner, unitId);
     if (!unitRecord) {
       continue;

@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  convertPriceFromBase,
+  convertPriceToBase,
   convertToBaseQuantity,
   normalizeUnitMappings,
 } from "@/utils/unitConversion";
@@ -58,17 +60,42 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
     );
   }, [normalizedUnits]);
 
+  const formatCost = (value) =>
+    Number.isFinite(value) ? value.toFixed(2) : "";
+
+  const initialBaseCost = useMemo(() => {
+    const numeric = Number(stock.unit_cost ?? 0);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+  }, [stock.unit_cost]);
+
   const [selectedUnitId, setSelectedUnitId] = useState(baseUnit?.id ?? null);
-  const [formData, setFormData] = useState({
-    quantity: "",
-    unit_cost: stock.unit_cost.toString(),
-    supplier: stock.supplier || "",
-    notes: "",
-  });
+  const [quantity, setQuantity] = useState("");
+  const [baseUnitCost, setBaseUnitCost] = useState(initialBaseCost);
+  const [unitCostInput, setUnitCostInput] = useState(formatCost(initialBaseCost));
+  const [supplier, setSupplier] = useState(stock.supplier || "");
+  const [notes, setNotes] = useState("");
+
+  const baseUnitCostRef = useRef(baseUnitCost);
 
   useEffect(() => {
-    setSelectedUnitId(baseUnit?.id ?? null);
-  }, [baseUnit?.id]);
+    baseUnitCostRef.current = baseUnitCost;
+  }, [baseUnitCost]);
+
+  useEffect(() => {
+    setBaseUnitCost(initialBaseCost);
+    setUnitCostInput(formatCost(initialBaseCost));
+  }, [initialBaseCost]);
+
+  useEffect(() => {
+    const nextUnitId = baseUnit?.id ?? null;
+    setSelectedUnitId(nextUnitId);
+    const converted = convertPriceFromBase(
+      baseUnitCostRef.current,
+      nextUnitId,
+      normalizedUnits,
+    );
+    setUnitCostInput(formatCost(converted));
+  }, [baseUnit?.id, normalizedUnits]);
 
   const parseUnitId = (value) => {
     if (value === "") return null;
@@ -86,25 +113,52 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
   }, [baseUnit, normalizedUnits, selectedUnitId]);
 
   const baseUnitLabel = baseUnit?.name ?? stock.unit ?? "base units";
+  const selectedUnitLabel = selectedUnit?.name ?? baseUnitLabel;
+
+  const handleUnitChange = (rawValue) => {
+    const parsedUnitId = parseUnitId(rawValue);
+    setSelectedUnitId(parsedUnitId);
+    const converted = convertPriceFromBase(
+      baseUnitCost,
+      parsedUnitId,
+      normalizedUnits,
+    );
+    setUnitCostInput(formatCost(converted));
+  };
+
+  const handleUnitCostChange = (nextValue) => {
+    setUnitCostInput(nextValue);
+    const parsedCost = Number(nextValue);
+    if (!Number.isFinite(parsedCost) || parsedCost <= 0) {
+      return;
+    }
+    const normalizedBase = convertPriceToBase(
+      parsedCost,
+      selectedUnitId ?? null,
+      normalizedUnits,
+    );
+    if (Number.isFinite(normalizedBase) && normalizedBase > 0) {
+      setBaseUnitCost(normalizedBase);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
       stock_id: stock.id,
-      quantity: parseFloat(formData.quantity),
-      unit_cost: parseFloat(formData.unit_cost),
-      supplier: formData.supplier,
-      notes: formData.notes,
+      quantity: parseFloat(quantity),
+      unit_cost: parseFloat(unitCostInput),
+      supplier,
+      notes,
       unit_id: selectedUnitId ?? undefined,
     });
   };
 
   const totalCost =
-    (parseFloat(formData.quantity) || 0) *
-    (parseFloat(formData.unit_cost) || 0);
+    (parseFloat(quantity) || 0) * (parseFloat(unitCostInput) || 0);
 
   const baseQuantity = convertToBaseQuantity(
-    formData.quantity,
+    quantity,
     selectedUnitId,
     normalizedUnits,
   );
@@ -122,7 +176,7 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
             </label>
             <select
               value={selectedUnitId ?? ""}
-              onChange={(e) => setSelectedUnitId(parseUnitId(e.target.value))}
+              onChange={(e) => handleUnitChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#262626] text-gray-900 dark:text-white"
             >
               {normalizedUnits.map((unit) => (
@@ -147,25 +201,21 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
               type="number"
               step="0.01"
               required
-              value={formData.quantity}
-              onChange={(e) =>
-                setFormData({ ...formData, quantity: e.target.value })
-              }
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#262626] text-gray-900 dark:text-white"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Unit Cost ($)
+              Unit Cost ($ per {selectedUnitLabel})
             </label>
             <input
               type="number"
               step="0.01"
               required
-              value={formData.unit_cost}
-              onChange={(e) =>
-                setFormData({ ...formData, unit_cost: e.target.value })
-              }
+              value={unitCostInput}
+              onChange={(e) => handleUnitCostChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#262626] text-gray-900 dark:text-white"
             />
           </div>
@@ -175,10 +225,8 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
             </label>
             <input
               type="text"
-              value={formData.supplier}
-              onChange={(e) =>
-                setFormData({ ...formData, supplier: e.target.value })
-              }
+              value={supplier}
+              onChange={(e) => setSupplier(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#262626] text-gray-900 dark:text-white"
             />
           </div>
@@ -187,10 +235,8 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
               Notes
             </label>
             <textarea
-              value={formData.notes}
-              onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#262626] text-gray-900 dark:text-white"
               rows="2"
             />
@@ -202,6 +248,12 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
                 {Number.isFinite(baseQuantity)
                   ? baseQuantity.toFixed(2)
                   : "0.00"} {baseUnitLabel}
+              </span>
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Cost per Base Unit: {" "}
+              <span className="font-bold text-gray-900 dark:text-white">
+                ${Number.isFinite(baseUnitCost) ? baseUnitCost.toFixed(2) : "0.00"}
               </span>
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">

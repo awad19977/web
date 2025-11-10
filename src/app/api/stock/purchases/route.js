@@ -1,4 +1,4 @@
-import sql from "@/app/api/utils/sql";
+import sql, { logStockTransaction } from "@/app/api/utils/sql";
 import { requireFeature } from "@/app/api/utils/auth";
 import { FEATURE_KEYS } from "@/constants/featureFlags";
 
@@ -37,7 +37,14 @@ export async function POST(request) {
     const { response } = await requireFeature(request, FEATURE_KEYS.STOCK);
     if (response) return response;
 
-    const { stock_id, quantity, unit_cost, supplier, notes, unit_id } =
+    const {
+      stock_id,
+      quantity,
+      unit_cost,
+      supplier,
+      notes,
+      unit_id,
+    } =
       await request.json();
 
     if (!stock_id || !quantity || !unit_cost) {
@@ -55,7 +62,16 @@ export async function POST(request) {
       );
     }
 
+    const enteredUnitCost = Number(unit_cost);
+    if (!Number.isFinite(enteredUnitCost) || enteredUnitCost <= 0) {
+      return Response.json(
+        { error: "unit_cost must be a positive number" },
+        { status: 400 },
+      );
+    }
+
     let baseQuantity = enteredQuantity;
+    let unitCostForStorage = enteredUnitCost;
 
     let conversionFactor = 1;
     if (unit_id) {
@@ -74,14 +90,18 @@ export async function POST(request) {
 
       conversionFactor = Number(conversion.conversion_factor);
       baseQuantity = baseQuantity * conversionFactor;
+
+      if (Number.isFinite(conversionFactor) && conversionFactor > 0) {
+        unitCostForStorage = enteredUnitCost / conversionFactor;
+      }
     }
 
-    const total_cost = enteredQuantity * unit_cost;
+    const total_cost = baseQuantity * unitCostForStorage;
 
     const { purchase, updatedStock } = await sql.transaction(async (tx) => {
       const [createdPurchase] = await tx`
   INSERT INTO stock_purchases (stock_id, quantity, unit_cost, total_cost, supplier, notes, unit_id, entered_quantity)
-  VALUES (${stock_id}, ${baseQuantity}, ${unit_cost}, ${total_cost}, ${supplier}, ${notes}, ${unit_id}, ${unit_id ? enteredQuantity : null})
+  VALUES (${stock_id}, ${baseQuantity}, ${unitCostForStorage}, ${total_cost}, ${supplier}, ${notes}, ${unit_id}, ${unit_id ? enteredQuantity : null})
         RETURNING *
       `;
       const [stockRow] = await tx`
@@ -91,6 +111,21 @@ export async function POST(request) {
         WHERE id = ${stock_id}
         RETURNING *
       `;
+
+      await logStockTransaction({
+        runner: tx,
+        stockId: stock_id,
+        type: "increase",
+        quantity: baseQuantity,
+        enteredQuantity: unit_id ? enteredQuantity : baseQuantity,
+        unitId: unit_id ?? stockRow.base_unit_id,
+        reason: "purchase",
+        metadata: {
+          purchase_id: createdPurchase.id,
+          supplier,
+        },
+      });
+
       return { purchase: createdPurchase, updatedStock: stockRow };
     });
 

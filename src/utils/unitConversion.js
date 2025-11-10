@@ -36,3 +36,27 @@ export function convertFromBaseQuantity(quantity, unitId, units = []) {
   if (!unit || !unit.conversion_factor) return amount;
   return amount / unit.conversion_factor;
 }
+
+export function convertPriceToBase(price, unitId, units = []) {
+  const value = Number(price);
+  if (!Number.isFinite(value)) return 0;
+  if (!unitId) return value;
+  const normalized = normalizeUnitMappings(units);
+  const unit = normalized.find((item) => item.id === unitId);
+  if (!unit || !Number.isFinite(unit.conversion_factor) || unit.conversion_factor === 0) {
+    return value;
+  }
+  return value / unit.conversion_factor;
+}
+
+export function convertPriceFromBase(price, unitId, units = []) {
+  const value = Number(price);
+  if (!Number.isFinite(value)) return 0;
+  if (!unitId) return value;
+  const normalized = normalizeUnitMappings(units);
+  const unit = normalized.find((item) => item.id === unitId);
+  if (!unit || !Number.isFinite(unit.conversion_factor)) {
+    return value;
+  }
+  return value * unit.conversion_factor;
+}

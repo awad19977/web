@@ -19,7 +19,7 @@ This project is a React Router v7 + Hono SSR application that delivers a product
    ```powershell
    npm run migrate
    ```
-   The migration set creates the authentication tables (`auth_users`, `auth_accounts`, `auth_sessions`, `auth_verification_token`), the `user_feature_flags` table, seed metadata used by the permission system, and the stock-unit conversion schema (`stock_units`, `stock_unit_conversions`, converted `stock`/`stock_purchases` columns).
+   The migration set creates the authentication tables (`auth_users`, `auth_accounts`, `auth_sessions`, `auth_verification_token`), the `user_feature_flags` table, seed metadata used by the permission system, and the stock-unit conversion schema (`stock_units`, `stock_unit_conversions`, converted `stock`/`stock_purchases` columns). Migration `003_stock_transactions.sql` adds a `stock_transactions` ledger table that records every inventory increase/decrease (including a backfill of historical purchases) for traceability.
 
 3. **Seed an administrator account**
    ```powershell
@@ -58,7 +58,7 @@ This project is a React Router v7 + Hono SSR application that delivers a product
 - `src/app/page.jsx` protects the dashboard route, redirecting unauthenticated users to `/account/signin`.
 - `src/components/Sidebar.jsx` now binds to the signed-in user, filters navigation using feature flags, and performs logout with the auth client.
 - `src/components/Dashboard.jsx` and related tab components consume the same `DASHBOARD_TABS` metadata to stay aligned with sidebar navigation.
-- Stock management supports per-item unit conversions. `AddStockForm` now requires selecting catalogued units (e.g., boxes, crates) for both the base item and alternates, while `PurchaseStockForm` lets operators buy using any configured unit and previews the base quantity recorded.
+- Stock management supports per-item unit conversions. `AddStockForm` now requires selecting catalogued units (e.g., boxes, crates) for both the base item and alternates. `PurchaseStockForm` lets operators buy using any configured unit, automatically converts costs/quantities back to the base unit, and logs the delta to `stock_transactions`.
 - The Unit Catalog tab requires `units:view` for access; editing and deletion additionally need `units:manage`. Populate this catalog before adding stock so the forms can reference the shared `stock_units` entries.
 
 ## Testing & Type Safety

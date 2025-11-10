@@ -23,12 +23,13 @@
 - API endpoints live in `src/app/api/**/route.js`; each exports HTTP verbs and is registered with Hono via `__create/route-builder.ts`, which injects `params` and supports hot reload.
 - Database access uses the tagged template `sql` from `src/app/api/utils/sql.js`, backed by Neon (`@neondatabase/serverless`); wrap new calls in try/catch and surface helpful JSON errors.
 - Shared API helpers (file upload proxy, generic `create.db`) exist under `src/app/api/utils`; prefer these over rolling external calls.
+- `src/app/api/utils/sql.js` also exports `logStockTransaction`, which inserts into the `stock_transactions` ledger. Call it for any server-side flow that changes stock quantities (e.g., purchases, future adjustments).
 
-## UI Patterns
 - Components live in `src/components` with feature subfolders (e.g., `Dashboard/*`); most files start with `'use client'` to stay on the client graph.
 - Tailwind utility classes provide layout/styling; global tokens live in `src/app/global.css` and `src/index.css`.
 - Dashboard flow (`Dashboard.jsx`) orchestrates tabs, consuming React Query hooks for reports/stock/expenses; mirror that pattern for new dashboard areas.
 - Third-party integrations are wrapped in `src/client-integrations/*` to stabilize their APIs; import from these wrappers instead of raw packages.
+- `PurchaseStockForm` keeps prices in sync across units; a visible change in unit automatically adjusts the displayed unit cost while maintaining an internal base-unit price for storage.
 
 ## Auth & Env
 - Auth context comes from `SessionProvider` (`@auth/create/react` alias) in `root.tsx`; client hooks (`src/utils/useAuth.js`) call `signIn`/`signOut` helpers.

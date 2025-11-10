@@ -66,3 +66,39 @@ const createSql = () => {
 const sql = createSql();
 
 export default sql;
+
+export async function logStockTransaction({
+  runner = sql,
+  stockId,
+  type,
+  quantity,
+  unitId = null,
+  enteredQuantity = null,
+  reason = null,
+  metadata = {},
+}) {
+  if (!stockId) throw new Error("stockId is required for stock transaction log");
+  if (!type) throw new Error("type is required for stock transaction log");
+  const normalizedQuantity = Number(quantity);
+  if (!Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0) {
+    throw new Error("quantity must be a positive number for stock transaction log");
+  }
+
+  const payload = {
+    stock_id: stockId,
+    type,
+    quantity: normalizedQuantity,
+    unit_id: unitId,
+    entered_quantity: enteredQuantity,
+    reason,
+    metadata,
+  };
+
+  const [record] = await runner`
+    INSERT INTO stock_transactions (stock_id, type, quantity, unit_id, entered_quantity, reason, metadata)
+    VALUES (${payload.stock_id}, ${payload.type}, ${payload.quantity}, ${payload.unit_id}, ${payload.entered_quantity}, ${payload.reason}, ${payload.metadata}::jsonb)
+    RETURNING *
+  `;
+
+  return record;
+}

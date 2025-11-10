@@ -1,4 +1,4 @@
-import sql from "@/app/api/utils/sql";
+import sql, { logStockTransaction } from "@/app/api/utils/sql";
 import { requireFeature } from "@/app/api/utils/auth";
 import { FEATURE_KEYS } from "@/constants/featureFlags";
 import { getUnitById, upsertStockUnits } from "@/app/api/utils/units";
@@ -144,6 +144,22 @@ export async function POST(request) {
         baseUnit: { id: baseUnitRecord.id },
         conversions: sanitizedConversions,
       });
+
+      const startingQuantity = Number(current_quantity ?? 0);
+      if (Number.isFinite(startingQuantity) && startingQuantity > 0) {
+        await logStockTransaction({
+          runner: tx,
+          stockId: newStock.id,
+          type: "increase",
+          quantity: startingQuantity,
+          unitId: baseUnitRecord.id,
+          enteredQuantity: startingQuantity,
+          reason: "initial_balance",
+          metadata: {
+            note: "Initial stock quantity on create",
+          },
+        });
+      }
 
       const baseMapping = unitMappings.find((mapping) => mapping.is_base);
 

@@ -2,6 +2,8 @@ export const FEATURE_KEYS = {
   DASHBOARD: 'dashboard:view',
   REPORTS: 'reports:view',
   STOCK: 'stock:manage',
+  STOCK_EDIT: 'stock:edit',
+  STOCK_DELETE: 'stock:delete',
   SALES: 'sales:manage',
   EXPENSES: 'expenses:manage',
   PRODUCTS: 'products:manage',
@@ -22,6 +24,14 @@ export const FEATURE_METADATA = {
   [FEATURE_KEYS.STOCK]: {
     label: 'Stock Management',
     description: 'Manage inventory items and stock purchases.',
+  },
+  [FEATURE_KEYS.STOCK_EDIT]: {
+    label: 'Edit Stock Items',
+    description: 'Edit existing stock records and their unit mappings.',
+  },
+  [FEATURE_KEYS.STOCK_DELETE]: {
+    label: 'Delete Stock Items',
+    description: 'Remove stock records from the catalog.',
   },
   [FEATURE_KEYS.SALES]: {
     label: 'Sales Management',
@@ -53,6 +63,8 @@ export const DEFAULT_FEATURE_FLAGS = {
   [FEATURE_KEYS.DASHBOARD]: true,
   [FEATURE_KEYS.REPORTS]: true,
   [FEATURE_KEYS.STOCK]: true,
+  [FEATURE_KEYS.STOCK_EDIT]: false,
+  [FEATURE_KEYS.STOCK_DELETE]: false,
   [FEATURE_KEYS.SALES]: true,
   [FEATURE_KEYS.EXPENSES]: true,
   [FEATURE_KEYS.PRODUCTS]: true,
