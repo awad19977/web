@@ -1,16 +1,13 @@
-const TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "stock", label: "Stock Management" },
-  { id: "sales", label: "Sales" },
-  { id: "expenses", label: "Expenses" },
-];
+export function DashboardTabs({ activeTab, onTabChange, tabs }) {
+  if (!tabs?.length) {
+    return null;
+  }
 
-export function DashboardTabs({ activeTab, onTabChange }) {
   return (
     <div className="mb-6">
       <div className="border-b border-gray-200 dark:border-gray-800">
         <nav className="-mb-px flex space-x-8">
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}

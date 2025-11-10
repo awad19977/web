@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { normalizeUnitMappings, getBaseUnit } from "@/utils/unitConversion";
 
 export function useStockManagement() {
   const queryClient = useQueryClient();
@@ -8,7 +9,30 @@ export function useStockManagement() {
     queryFn: async () => {
       const response = await fetch("/api/stock");
       if (!response.ok) throw new Error("Failed to fetch stock");
-      return response.json();
+      const rows = await response.json();
+      if (!Array.isArray(rows)) return [];
+
+      return rows.map((item) => {
+        const units = normalizeUnitMappings(item.units ?? []);
+        const baseUnit = item.base_unit
+          ? {
+              ...item.base_unit,
+              id: item.base_unit.id ?? item.base_unit.unit_id,
+              conversion_factor: Number(item.base_unit.conversion_factor ?? 1),
+              is_base: true,
+            }
+          : getBaseUnit(units);
+
+        return {
+          ...item,
+          current_quantity: Number(item.current_quantity ?? 0),
+          unit_cost: Number(item.unit_cost ?? 0),
+          total_purchased: Number(item.total_purchased ?? 0),
+          total_cost_purchased: Number(item.total_cost_purchased ?? 0),
+          units,
+          base_unit: baseUnit,
+        };
+      });
     },
   });
 
@@ -24,6 +48,7 @@ export function useStockManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["stock"] });
+      queryClient.invalidateQueries({ queryKey: ["stockUnits"] });
     },
   });
 

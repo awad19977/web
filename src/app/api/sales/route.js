@@ -1,8 +1,13 @@
 import sql from "@/app/api/utils/sql";
+import { requireFeature } from "@/app/api/utils/auth";
+import { FEATURE_KEYS } from "@/constants/featureFlags";
 
 // Get all sales
-export async function GET() {
+export async function GET(request) {
   try {
+    const { response } = await requireFeature(request, FEATURE_KEYS.SALES);
+    if (response) return response;
+
     const sales = await sql`
       SELECT 
         s.*,
@@ -23,6 +28,9 @@ export async function GET() {
 // Create new sale
 export async function POST(request) {
   try {
+    const { response } = await requireFeature(request, FEATURE_KEYS.SALES);
+    if (response) return response;
+
     const { product_id, quantity, unit_price, customer_name, notes } =
       await request.json();
 
@@ -48,20 +56,21 @@ export async function POST(request) {
       return Response.json({ error: "Insufficient stock" }, { status: 400 });
     }
 
-    const [sale, updatedProduct] = await sql.transaction([
-      sql`
+    const { sale, updatedProduct } = await sql.transaction(async (tx) => {
+      const [createdSale] = await tx`
         INSERT INTO sales (product_id, quantity, unit_price, total_amount, customer_name, notes)
         VALUES (${product_id}, ${quantity}, ${unit_price}, ${total_amount}, ${customer_name}, ${notes})
         RETURNING *
-      `,
-      sql`
+      `;
+      const [productRow] = await tx`
         UPDATE products 
         SET current_stock = current_stock - ${quantity},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ${product_id}
         RETURNING *
-      `,
-    ]);
+      `;
+      return { sale: createdSale, updatedProduct: productRow };
+    });
 
     return Response.json({ sale, updatedProduct });
   } catch (error) {

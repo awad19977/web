@@ -1,8 +1,13 @@
 import sql from "@/app/api/utils/sql";
+import { requireFeature } from "@/app/api/utils/auth";
+import { FEATURE_KEYS } from "@/constants/featureFlags";
 
 // Get all expenses
-export async function GET() {
+export async function GET(request) {
   try {
+    const { response } = await requireFeature(request, FEATURE_KEYS.EXPENSES);
+    if (response) return response;
+
     const expenses = await sql`
       SELECT * FROM expenses
       ORDER BY expense_date DESC
@@ -21,6 +26,9 @@ export async function GET() {
 // Create new expense
 export async function POST(request) {
   try {
+    const { response } = await requireFeature(request, FEATURE_KEYS.EXPENSES);
+    if (response) return response;
+
     const { category, description, amount, expense_date, notes } =
       await request.json();
 

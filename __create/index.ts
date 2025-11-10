@@ -3,7 +3,7 @@ import nodeConsole from 'node:console';
 import { skipCSRFCheck } from '@auth/core';
 import Credentials from '@auth/core/providers/credentials';
 import { authHandler, initAuthConfig } from '@hono/auth-js';
-import { Pool, neonConfig } from '@neondatabase/serverless';
+import { Pool } from 'pg';
 import { hash, verify } from 'argon2';
 import { Hono } from 'hono';
 import { contextStorage, getContext } from 'hono/context-storage';
@@ -12,12 +12,11 @@ import { proxy } from 'hono/proxy';
 import { requestId } from 'hono/request-id';
 import { createHonoServer } from 'react-router-hono-server/node';
 import { serializeError } from 'serialize-error';
-import ws from 'ws';
 import NeonAdapter from './adapter';
 import { getHTMLForErrorPage } from './get-html-for-error-page';
 import { isAuthAction } from './is-auth-action';
 import { API_BASENAME, api } from './route-builder';
-neonConfig.webSocketConstructor = ws;
+import { ensureUserFeatureDefaults, getUserFeatureMap } from '../src/app/api/utils/permissions';
 
 const als = new AsyncLocalStorage<{ requestId: string }>();
 
@@ -88,9 +87,23 @@ if (process.env.AUTH_SECRET) {
         strategy: 'jwt',
       },
       callbacks: {
+        async jwt({ token, user }) {
+          if (user?.id) {
+            token.features = await getUserFeatureMap(user.id);
+          } else if (token.sub && !token.features) {
+            token.features = await getUserFeatureMap(token.sub);
+          }
+          return token;
+        },
         session({ session, token }) {
           if (token.sub) {
             session.user.id = token.sub;
+          }
+          if (session.user) {
+            session.user = {
+              ...session.user,
+              features: token.features ?? {},
+            } as typeof session.user & { features: Record<string, boolean> };
           }
           return session;
         },
@@ -199,6 +212,7 @@ if (process.env.AUTH_SECRET) {
                 providerAccountId: newUser.id,
                 provider: 'credentials',
               });
+              await ensureUserFeatureDefaults(newUser.id);
               return newUser;
             }
             return null;

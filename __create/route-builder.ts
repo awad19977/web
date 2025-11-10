@@ -1,6 +1,6 @@
 import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Hono } from 'hono';
 import type { Handler } from 'hono/types';
 import updatedFetch from '../src/__create/fetch';
@@ -45,7 +45,7 @@ async function findRouteFiles(dir: string): Promise<string[]> {
 // Helper function to transform file path to Hono route path
 function getHonoPath(routeFile: string): { name: string; pattern: string }[] {
   const relativePath = routeFile.replace(__dirname, '');
-  const parts = relativePath.split('/').filter(Boolean);
+  const parts = relativePath.split(/[/\\]+/).filter(Boolean);
   const routeParts = parts.slice(0, -1); // Remove 'route.js'
   if (routeParts.length === 0) {
     return [{ name: 'root', pattern: '' }];
@@ -83,7 +83,9 @@ async function registerRoutes() {
     try {
       console.log(`Registering route: ${routeFile}`);
       // Ensure the routeFile is a valid file URL and inside the project root
-      const routeFileUrl = routeFile.startsWith('file://') ? routeFile : `file://${routeFile}`;
+      const routeFileUrl = routeFile.startsWith('file://')
+        ? routeFile
+        : pathToFileURL(routeFile).href;
       const route = await import(/* @vite-ignore */ routeFileUrl);
 
       const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
@@ -96,7 +98,7 @@ async function registerRoutes() {
               const params = c.req.param();
               if ((import.meta as any).env?.DEV) {
                 const updatedRoute = await import(
-                  /* @vite-ignore */ `${routeFile}?update=${Date.now()}`
+                  /* @vite-ignore */ `${routeFileUrl}?update=${Date.now()}`
                 );
                 return await updatedRoute[method](c.req.raw, { params });
               }

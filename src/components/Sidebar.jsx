@@ -1,62 +1,52 @@
+"use client";
+
+import { useState } from "react";
 import {
   Search,
   LayoutGrid,
   Package,
-  Factory,
   ShoppingCart,
-  BarChart2,
   DollarSign,
+  Users,
+  Ruler,
   Settings,
   Bell,
   Gift,
   HelpCircle,
   ExternalLink,
   LogOut,
-  ChevronRight,
   BadgeCheck,
   X,
+  Loader2,
 } from "lucide-react";
+import useAuth from "@/utils/useAuth";
+import useUser from "@/utils/useUser";
+import { DASHBOARD_TABS } from "./Dashboard/tabConfig";
+
+const TAB_ICONS = {
+  overview: LayoutGrid,
+  stock: Package,
+  sales: ShoppingCart,
+  expenses: DollarSign,
+  users: Users,
+  units: Ruler,
+};
 
 export default function Sidebar({ onClose, activeTab, onTabChange }) {
-  const workplaceNavItems = [
-    {
-      icon: LayoutGrid,
-      label: "Dashboard",
-      tabId: "overview",
-      active: activeTab === "overview",
-    },
-    {
-      icon: Package,
-      label: "Stock Management",
-      tabId: "stock",
-      active: activeTab === "stock",
-      badge: "12",
-    },
-    {
-      icon: Factory,
-      label: "Production",
-      tabId: "production",
-      active: activeTab === "production",
-    },
-    {
-      icon: ShoppingCart,
-      label: "Sales",
-      tabId: "sales",
-      active: activeTab === "sales",
-    },
-    {
-      icon: BarChart2,
-      label: "Reports",
-      tabId: "reports",
-      active: activeTab === "reports",
-    },
-    {
-      icon: DollarSign,
-      label: "Expenses",
-      tabId: "expenses",
-      active: activeTab === "expenses",
-    },
-  ];
+  const { signOut } = useAuth();
+  const { user, loading } = useUser();
+  const [signingOut, setSigningOut] = useState(false);
+
+  const featureFlags = user?.features ?? {};
+
+  const workplaceNavItems = DASHBOARD_TABS.filter((tab) => featureFlags[tab.feature] !== false).map(
+    (tab) => ({
+      icon: TAB_ICONS[tab.id] ?? LayoutGrid,
+      label: tab.label,
+      tabId: tab.id,
+      active: activeTab === tab.id,
+    }),
+  );
 
   const accountNavItems = [
     { icon: Settings, label: "Settings" },
@@ -73,6 +63,27 @@ export default function Sidebar({ onClose, activeTab, onTabChange }) {
       onClose(); // Close sidebar on mobile after navigation
     }
   };
+
+  const handleLogout = async (event) => {
+    event.preventDefault();
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      const result = await signOut({ redirect: false, callbackUrl: "/account/signin" });
+      if (result?.url) {
+        window.location.href = result.url;
+      } else {
+        window.location.href = "/account/signin";
+      }
+    } catch (error) {
+      console.error("Failed to sign out", error);
+      setSigningOut(false);
+    }
+  };
+
+  const displayName = user?.name || user?.email || "Team Member";
+  const displayEmail = user?.email ?? "";
+  const avatarLetter = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="w-64 bg-white dark:bg-[#1E1E1E] border-r border-gray-200 dark:border-gray-800 flex flex-col h-full">
@@ -126,13 +137,18 @@ export default function Sidebar({ onClose, activeTab, onTabChange }) {
             WORKPLACE
           </h3>
           <nav className="space-y-1">
-            {workplaceNavItems.map((item, index) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={index}
-                  type="button"
-                  className={`
+            {workplaceNavItems.length === 0 && !loading ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No sections available for your account.
+              </p>
+            ) : (
+              workplaceNavItems.map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    className={`
                     group flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors duration-150 w-full text-left
                     ${
                       item.active
@@ -140,35 +156,22 @@ export default function Sidebar({ onClose, activeTab, onTabChange }) {
                         : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200 active:bg-gray-100 dark:active:bg-gray-700"
                     }
                   `}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavClick(item.tabId);
-                  }}
-                >
-                  <Icon
-                    className={`
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNavClick(item.tabId);
+                    }}
+                  >
+                    <Icon
+                      className={`
                     flex-shrink-0 -ml-1 mr-3 h-5 w-5 transition-colors duration-150
                     ${item.active ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500 group-hover:text-[#18B84E] dark:group-hover:text-[#16A249] group-active:text-[#16A249] dark:group-active:text-[#14D45D]"}
                   `}
-                  />
-                  <span className="flex-1">{item.label}</span>
-
-                  {/* Badge */}
-                  {item.badge && (
-                    <span className="ml-3 inline-block py-0.5 px-2 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
-                      {item.badge}
-                    </span>
-                  )}
-
-                  {/* Beta Pill */}
-                  {item.pill && (
-                    <span className="ml-3 inline-block py-0.5 px-2 text-xs font-semibold bg-blue-50 dark:bg-blue-900/50 text-[#2884FF] dark:text-blue-300 rounded">
-                      {item.pill}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+                    />
+                    <span className="flex-1">{item.label}</span>
+                  </button>
+                );
+              })
+            )}
           </nav>
         </div>
 
@@ -199,49 +202,49 @@ export default function Sidebar({ onClose, activeTab, onTabChange }) {
 
         {/* Logout */}
         <div className="px-4">
-          <a
-            href="#"
-            className="group flex items-center px-3 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 active:bg-red-100 dark:active:bg-red-900/30 active:text-red-800 dark:active:text-red-200 transition-colors duration-150"
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="group flex items-center px-3 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 active:bg-red-100 dark:active:bg-red-900/30 active:text-red-800 dark:active:text-red-200 transition-colors duration-150 w-full disabled:opacity-60"
+            disabled={signingOut}
           >
-            <LogOut className="flex-shrink-0 -ml-1 mr-3 h-5 w-5 text-red-500 dark:text-red-400 group-hover:text-red-600 dark:group-hover:text-red-300 group-active:text-red-700 dark:group-active:text-red-200 transition-colors duration-150" />
-            <span>Logout</span>
-          </a>
+            {signingOut ? (
+              <Loader2 className="flex-shrink-0 -ml-1 mr-3 h-5 w-5 animate-spin" />
+            ) : (
+              <LogOut className="flex-shrink-0 -ml-1 mr-3 h-5 w-5 text-red-500 dark:text-red-400 group-hover:text-red-600 dark:group-hover:text-red-300 group-active:text-red-700 dark:group-active:text-red-200 transition-colors duration-150" />
+            )}
+            <span>{signingOut ? "Signing out..." : "Logout"}</span>
+          </button>
         </div>
       </div>
 
       {/* User Profile Card - Bottom */}
       <div className="border-t border-gray-200 dark:border-gray-800 p-4">
-        <button className="w-full flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700 rounded-lg p-2 -m-2 transition-colors duration-150 group">
+        <div className="w-full flex items-center rounded-lg p-2 -m-2">
           <div className="relative flex-shrink-0">
-            <img
-              className="h-10 w-10 rounded-full"
-              src="https://img.b2bpic.net/premium-vector/woman-with-smile-her-face_1025827-137035.jpg"
-              alt="Production Manager"
-            />
-            {/* Online status dot */}
+            {user?.image ? (
+              <img className="h-10 w-10 rounded-full" src={user.image} alt={displayName} />
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-[#18B84E] dark:bg-[#16A249] flex items-center justify-center text-white font-semibold">
+                {avatarLetter || "?"}
+              </div>
+            )}
             <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-[#18B84E] dark:bg-[#16A249] border-2 border-white dark:border-[#1E1E1E] rounded-full"></div>
           </div>
 
           <div className="ml-3 flex-1 flex flex-col justify-center">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-800 dark:group-hover:text-gray-200 group-active:text-gray-700 dark:group-active:text-gray-300 transition-colors duration-150">
-                Production Manager
-              </p>
-            </div>
-            <div className="flex items-center mt-0.5">
-              <div className="flex items-center px-1.5 py-0.5 bg-green-50 dark:bg-green-900/30 rounded text-xs">
-                <BadgeCheck className="h-2.5 w-2.5 text-[#18B84E] dark:text-[#16A249] mr-1" />
-                <span className="font-semibold text-[#18B84E] dark:text-[#16A249] text-xs">
-                  Pro
-                </span>
-              </div>
-            </div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              {loading ? "Signing in..." : displayName}
+            </p>
+            {displayEmail && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">{displayEmail}</p>
+            )}
           </div>
 
-          <div className="flex-shrink-0">
-            <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400 group-active:text-gray-600 dark:group-active:text-gray-300 transition-colors duration-150" />
+          <div className="flex-shrink-0 text-[#18B84E] dark:text-[#16A249]">
+            <BadgeCheck className="h-4 w-4" />
           </div>
-        </button>
+        </div>
       </div>
     </div>
   );

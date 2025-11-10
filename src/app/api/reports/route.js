@@ -1,8 +1,13 @@
 import sql from "@/app/api/utils/sql";
+import { requireFeature } from "@/app/api/utils/auth";
+import { FEATURE_KEYS } from "@/constants/featureFlags";
 
 // Get financial reports and analytics
 export async function GET(request) {
   try {
+    const { response } = await requireFeature(request, FEATURE_KEYS.REPORTS);
+    if (response) return response;
+
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "30"; // days
 

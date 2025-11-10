@@ -1,8 +1,13 @@
 import sql from "@/app/api/utils/sql";
+import { requireFeature } from "@/app/api/utils/auth";
+import { FEATURE_KEYS } from "@/constants/featureFlags";
 
 // Get all products with their recipes
-export async function GET() {
+export async function GET(request) {
   try {
+    const { response } = await requireFeature(request, FEATURE_KEYS.PRODUCTS);
+    if (response) return response;
+
     const products = await sql`
       SELECT 
         p.*,
@@ -42,6 +47,9 @@ export async function GET() {
 // Create new product
 export async function POST(request) {
   try {
+    const { response } = await requireFeature(request, FEATURE_KEYS.PRODUCTS);
+    if (response) return response;
+
     const {
       name,
       description,

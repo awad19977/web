@@ -1,23 +1,35 @@
 import { Package, ShoppingCart, DollarSign } from "lucide-react";
+import { FEATURE_KEYS } from "@/constants/featureFlags";
 
-export function QuickActions({ onActionClick }) {
+export function QuickActions({ onActionClick, features }) {
   const actions = [
     {
       id: "stock",
       icon: Package,
       label: "Manage Stock",
+      feature: FEATURE_KEYS.STOCK,
     },
     {
       id: "sales",
       icon: ShoppingCart,
       label: "Record Sale",
+      feature: FEATURE_KEYS.SALES,
     },
     {
       id: "expenses",
       icon: DollarSign,
       label: "Add Expense",
+      feature: FEATURE_KEYS.EXPENSES,
     },
   ];
+
+  const visibleActions = actions.filter((action) =>
+    action.feature ? features?.[action.feature] : true,
+  );
+
+  if (!visibleActions.length) {
+    return null;
+  }
 
   return (
     <div className="bg-white dark:bg-[#1E1E1E] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
@@ -25,7 +37,7 @@ export function QuickActions({ onActionClick }) {
         Quick Actions
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {actions.map((action) => {
+        {visibleActions.map((action) => {
           const Icon = action.icon;
           return (
             <button

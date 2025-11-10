@@ -40,6 +40,18 @@ export function StockTable({ stock, onPurchaseClick }) {
                 </td>
                 <td className="px-6 py-4 text-gray-900 dark:text-white">
                   {item.current_quantity} {item.unit}
+                  {Array.isArray(item.units) && item.units.length > 1 && (
+                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                      {item.units
+                        .filter((unit) => !unit.is_base)
+                        .map((unit) => (
+                          <div key={unit.id}>
+                            1 {unit.name}
+                            {item.unit ? ` = ${unit.conversion_factor} ${item.unit}` : ""}
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </td>
                 <td className="px-6 py-4 text-gray-900 dark:text-white">
                   ${item.unit_cost}
