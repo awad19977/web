@@ -7,6 +7,7 @@ export const FEATURE_KEYS = {
   SALES: 'sales:manage',
   EXPENSES: 'expenses:manage',
   PRODUCTS: 'products:manage',
+  PRODUCTION: 'production:manage',
   USERS: 'users:manage',
   UNITS_VIEW: 'units:view',
   UNITS: 'units:manage',
@@ -45,6 +46,10 @@ export const FEATURE_METADATA = {
     label: 'Products',
     description: 'Create and manage sellable products.',
   },
+  [FEATURE_KEYS.PRODUCTION]: {
+    label: 'Production Orders',
+    description: 'Plan and track product production batches.',
+  },
   [FEATURE_KEYS.USERS]: {
     label: 'User Administration',
     description: 'Manage users and their feature-level permissions.',
@@ -68,6 +73,7 @@ export const DEFAULT_FEATURE_FLAGS = {
   [FEATURE_KEYS.SALES]: true,
   [FEATURE_KEYS.EXPENSES]: true,
   [FEATURE_KEYS.PRODUCTS]: true,
+  [FEATURE_KEYS.PRODUCTION]: true,
   [FEATURE_KEYS.USERS]: false,
   [FEATURE_KEYS.UNITS_VIEW]: true,
   [FEATURE_KEYS.UNITS]: false,

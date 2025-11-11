@@ -10,6 +10,8 @@ import { ExpenseManagementTab } from "./Dashboard/ExpenseManagementTab";
 import { UserManagementTab } from "./Dashboard/UserManagementTab";
 import { ReportsTab } from "./Dashboard/ReportsTab";
 import { UnitsManagementTab } from "./Dashboard/UnitsManagementTab";
+import { ProductsManagementTab } from "./Dashboard/ProductsManagementTab";
+import { ProductionManagementTab } from "./Dashboard/ProductionManagementTab";
 import useUser from "@/utils/useUser";
 import { FEATURE_KEYS } from "@/constants/featureFlags";
 import { DASHBOARD_TABS } from "./Dashboard/tabConfig";
@@ -82,6 +84,14 @@ export default function Dashboard({
 
       {activeTab === "stock" && featureFlags[FEATURE_KEYS.STOCK] !== false && (
         <StockManagementTab />
+      )}
+
+      {activeTab === "products" && featureFlags[FEATURE_KEYS.PRODUCTS] !== false && (
+        <ProductsManagementTab />
+      )}
+
+      {activeTab === "production" && featureFlags[FEATURE_KEYS.PRODUCTION] !== false && (
+        <ProductionManagementTab />
       )}
 
       {activeTab === "units" && canViewUnits && (

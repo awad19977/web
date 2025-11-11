@@ -5,6 +5,8 @@ import {
   Search,
   LayoutGrid,
   Package,
+  Boxes,
+  Factory,
   ShoppingCart,
   DollarSign,
   Users,
@@ -26,6 +28,8 @@ import { DASHBOARD_TABS } from "./Dashboard/tabConfig";
 const TAB_ICONS = {
   overview: LayoutGrid,
   stock: Package,
+  products: Boxes,
+  production: Factory,
   sales: ShoppingCart,
   expenses: DollarSign,
   users: Users,

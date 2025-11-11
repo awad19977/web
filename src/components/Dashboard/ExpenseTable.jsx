@@ -1,3 +1,16 @@
+const currencyFormatter = new Intl.NumberFormat(undefined, {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 2,
+});
+
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString();
+};
+
 export function ExpenseTable({ expenses }) {
   return (
     <div className="bg-white dark:bg-[#1E1E1E] rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
@@ -39,13 +52,13 @@ export function ExpenseTable({ expenses }) {
                   </div>
                 </td>
                 <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                  ${expense.amount}
+                  {currencyFormatter.format(expense.amount ?? 0)}
                 </td>
                 <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                  {new Date(expense.expense_date).toLocaleDateString()}
+                  {formatDate(expense.expense_date)}
                 </td>
                 <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                  {expense.notes || "N/A"}
+                  {expense.notes?.trim() ? expense.notes : "—"}
                 </td>
               </tr>
             ))}

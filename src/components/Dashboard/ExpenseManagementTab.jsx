@@ -1,19 +1,44 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
 import { useExpenseManagement } from "@/hooks/useExpenseManagement";
 import { ExpenseTable } from "./ExpenseTable";
 import { AddExpenseForm } from "./AddExpenseForm";
 
+const currencyFormatter = new Intl.NumberFormat(undefined, {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 2,
+});
+
 export function ExpenseManagementTab() {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [formError, setFormError] = useState(null);
 
-  const { expenses, isLoading, addExpense, addExpenseLoading } =
+  const { expenses, isLoading, isError, error, addExpense, addExpenseLoading } =
     useExpenseManagement();
 
   const handleAddExpense = (data) => {
+    setFormError(null);
     addExpense(data, {
-      onSuccess: () => setShowAddForm(false),
+      onSuccess: (result) => {
+        setShowAddForm(false);
+        setFeedback({
+          type: "success",
+          message: `Logged ${result?.description || "expense"} for ${currencyFormatter.format(
+            result?.amount ?? data.amount ?? 0,
+          )}`,
+        });
+      },
+      onError: (mutationError) => {
+        setFormError(mutationError?.message || "Unable to add expense right now.");
+      },
     });
+  };
+
+  const closeModal = () => {
+    setShowAddForm(false);
+    setFormError(null);
   };
 
   return (
@@ -31,13 +56,77 @@ export function ExpenseManagementTab() {
         </button>
       </div>
 
-      <ExpenseTable expenses={expenses} />
+      {feedback && (
+        <div className="rounded-xl border border-emerald-200/70 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+          {feedback.message}
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="ml-3 text-xs font-semibold uppercase tracking-wide"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="grid gap-3">
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="animate-pulse rounded-xl border border-dashed border-gray-300 bg-white p-4 dark:border-gray-700 dark:bg-[#1E1E1E]"
+            >
+              <div className="h-4 w-32 rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="mt-3 h-3 w-48 rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="mt-3 flex gap-2">
+                <div className="h-8 flex-1 rounded bg-gray-100 dark:bg-gray-800" />
+                <div className="h-8 flex-1 rounded bg-gray-100 dark:bg-gray-800" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : isError ? (
+        <div className="flex items-start gap-3 rounded-xl border border-rose-200/70 bg-rose-50 p-4 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+          <AlertTriangle className="mt-0.5 h-5 w-5" />
+          <div>
+            <h3 className="font-semibold">Unable to load expenses</h3>
+            <p className="text-sm opacity-90">
+              {error?.message || "Please refresh the page or try again later."}
+            </p>
+          </div>
+        </div>
+      ) : expenses.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-gray-700 dark:bg-[#1E1E1E]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">
+            <Plus className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              No expenses logged yet
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Keep track of operational costs by recording your first expense.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAddForm(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#18B84E] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#16A249] dark:bg-[#16A249] dark:hover:bg-[#14D45D]"
+          >
+            <Plus className="h-4 w-4" />
+            Add an expense
+          </button>
+        </div>
+      ) : (
+        <ExpenseTable expenses={expenses} />
+      )}
 
       {showAddForm && (
         <AddExpenseForm
-          onClose={() => setShowAddForm(false)}
+          onClose={closeModal}
           onSubmit={handleAddExpense}
           loading={addExpenseLoading}
+          error={formError}
         />
       )}
     </div>
