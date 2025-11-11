@@ -49,10 +49,14 @@ export const setUserFeatureFlag = async (userId, featureKey, enabled, runner = s
   `;
 };
 
-export const setUserFeatureMap = async (userId, features) => {
+export const setUserFeatureMap = async (userId, features, runner = sql) => {
   const normalized = normalizeFeatureMap(features);
 
-  await sql.transaction(async (tx) => {
+  const execute = runner === sql
+    ? async (callback) => sql.transaction(callback)
+    : async (callback) => callback(runner);
+
+  await execute(async (tx) => {
     for (const key of ALL_FEATURE_KEYS) {
       const value = normalized[key] ?? false;
       await tx`
@@ -67,8 +71,8 @@ export const setUserFeatureMap = async (userId, features) => {
   return normalized;
 };
 
-export const ensureUserFeatureDefaults = async (userId) => {
-  return setUserFeatureMap(userId, DEFAULT_FEATURE_FLAGS);
+export const ensureUserFeatureDefaults = async (userId, runner = sql) => {
+  return setUserFeatureMap(userId, DEFAULT_FEATURE_FLAGS, runner);
 };
 
 export const hasFeatureEnabled = (featureMap, featureKey) => {

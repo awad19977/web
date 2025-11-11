@@ -31,11 +31,62 @@ export function useUserManagement() {
     },
   });
 
+  const createUserMutation = useMutation({
+    mutationFn: (payload) =>
+      fetchJson("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ userId, data }) =>
+      fetchJson(`/api/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId) =>
+      fetchJson(`/api/users/${userId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ userId, password }) =>
+      fetchJson(`/api/users/${userId}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      }),
+  });
+
   return {
     users: usersQuery.data?.users ?? [],
     usersLoading: usersQuery.isLoading,
     usersError: usersQuery.isError,
     updatePermission: updatePermission.mutate,
     updatePermissionLoading: updatePermission.isLoading,
+    createUser: createUserMutation.mutateAsync,
+    createUserLoading: createUserMutation.isLoading,
+    updateUser: updateUserMutation.mutateAsync,
+    updateUserLoading: updateUserMutation.isLoading,
+    deleteUser: deleteUserMutation.mutateAsync,
+    deleteUserLoading: deleteUserMutation.isLoading,
+    resetPassword: resetPasswordMutation.mutateAsync,
+    resetPasswordLoading: resetPasswordMutation.isLoading,
   };
 }
