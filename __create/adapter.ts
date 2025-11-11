@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type {
 	AdapterUser,
 	VerificationToken,
@@ -8,6 +9,7 @@ import type { ProviderType } from '@auth/core/providers';
 import type { Pool } from 'pg';
 
 interface NeonUser extends AdapterUser {
+	username: string;
 	accounts: {
 		provider: string;
 		provider_account_id: string;
@@ -16,9 +18,10 @@ interface NeonUser extends AdapterUser {
 }
 
 interface NeonAdapter extends Adapter {
-	createUser(data: AdapterUser): Promise<AdapterUser>;
+	createUser(data: AdapterUser & { username?: string }): Promise<AdapterUser>;
 	getUser(userId: string): Promise<AdapterUser | null>;
 	getUserByEmail(email: string): Promise<NeonUser | null>;
+	getUserByUsername(username: string): Promise<NeonUser | null>;
 	getUserByAccount(data: {
 		provider: string;
 		providerAccountId: string;
@@ -40,6 +43,31 @@ interface NeonAdapter extends Adapter {
 }
 
 export default function NeonAdapter(client: Pool): NeonAdapter {
+	const normalizeUsername = (candidate?: string) => {
+		const base = (candidate && candidate.trim().toLowerCase()) || '';
+		const sanitized = base.replace(/[^a-z0-9._-]/g, '-');
+		return sanitized || `user_${randomUUID().slice(0, 8)}`;
+	};
+
+	const ensureUniqueUsername = async (candidate?: string, excludeUserId?: string) => {
+		const base = normalizeUsername(candidate);
+		let slug = base;
+		let attempt = 0;
+		while (true) {
+			const { rowCount } = await client.query(
+				excludeUserId
+					? 'select 1 from auth_users where lower(username) = lower($1) and id <> $2 limit 1'
+					: 'select 1 from auth_users where lower(username) = lower($1) limit 1',
+				excludeUserId ? [slug, excludeUserId] : [slug]
+			);
+			if (rowCount === 0) {
+				return slug;
+			}
+			attempt += 1;
+			slug = `${base}_${attempt}`;
+		}
+	};
+
 	return {
 		async createVerificationToken(
 			verificationToken: VerificationToken
@@ -66,15 +94,19 @@ export default function NeonAdapter(client: Pool): NeonAdapter {
 			return result.rowCount !== 0 ? result.rows[0] : null;
 		},
 
-		async createUser(user: Omit<AdapterUser, 'id'>) {
+		async createUser(user: Omit<AdapterUser, 'id'> & { username?: string }) {
 			const { name, email, emailVerified, image } = user;
+			const providedUsername = 'username' in user ? user.username : undefined;
+			const baseUsername = providedUsername || (email ? email.split('@')[0] : undefined);
+		const username = await ensureUniqueUsername(baseUsername);
 			const sql = `
-        INSERT INTO auth_users (name, email, "emailVerified", image)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, name, email, "emailVerified", image`;
+	        INSERT INTO auth_users (name, email, username, "emailVerified", image)
+	        VALUES ($1, $2, $3, $4, $5)
+	        RETURNING id, name, email, username, "emailVerified", image`;
 			const result = await client.query(sql, [
 				name,
 				email,
+				username,
 				emailVerified,
 				image,
 			]);
@@ -105,6 +137,22 @@ export default function NeonAdapter(client: Pool): NeonAdapter {
 				accounts: accountsData.rows,
 			};
 		},
+		async getUserByUsername(username) {
+			const sql = 'select * from auth_users where lower(username) = lower($1)';
+			const result = await client.query(sql, [username]);
+			if (result.rowCount === 0) {
+				return null;
+			}
+			const userData = result.rows[0];
+			const accountsData = await client.query(
+				' select * from auth_accounts where "providerAccountId" = $1',
+				[userData.id]
+			);
+			return {
+				...userData,
+				accounts: accountsData.rows,
+			};
+		},
 		async getUserByAccount({
 			providerAccountId,
 			provider,
@@ -119,7 +167,7 @@ export default function NeonAdapter(client: Pool): NeonAdapter {
 			const result = await client.query(sql, [provider, providerAccountId]);
 			return result.rowCount !== 0 ? result.rows[0] : null;
 		},
-		async updateUser(user: Partial<AdapterUser>): Promise<AdapterUser> {
+		async updateUser(user: Partial<AdapterUser> & { username?: string }): Promise<AdapterUser> {
 			const fetchSql = 'select * from auth_users where id = $1';
 			const query1 = await client.query(fetchSql, [user.id]);
 			const oldUser = query1.rows[0];
@@ -129,17 +177,21 @@ export default function NeonAdapter(client: Pool): NeonAdapter {
 				...user,
 			};
 
+			const sanitizedUsername = newUser.username
+				? await ensureUniqueUsername(newUser.username, newUser.id as string | undefined)
+				: oldUser.username;
 			const { id, name, email, emailVerified, image } = newUser;
 			const updateSql = `
         UPDATE auth_users set
-        name = $2, email = $3, "emailVerified" = $4, image = $5
-        where id = $1
-        RETURNING name, id, email, "emailVerified", image
+	        name = $2, email = $3, username = $4, "emailVerified" = $5, image = $6
+	        where id = $1
+	        RETURNING name, id, email, username, "emailVerified", image
       `;
 			const query2 = await client.query(updateSql, [
 				id,
 				name,
 				email,
+				sanitizedUsername,
 				emailVerified,
 				image,
 			]);

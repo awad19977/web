@@ -30,6 +30,7 @@ export async function GET(request) {
 				id: jwt.sub,
 				email: jwt.email,
 				name: jwt.name,
+				username: jwt.username,
 			},
 		}),
 		{

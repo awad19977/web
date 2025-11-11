@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { randomUUID } from 'node:crypto';
 import nodeConsole from 'node:console';
 import { skipCSRFCheck } from '@auth/core';
 import Credentials from '@auth/core/providers/credentials';
@@ -88,22 +89,50 @@ if (process.env.AUTH_SECRET) {
       },
       callbacks: {
         async jwt({ token, user }) {
+          const authToken = token as typeof token & {
+            username?: string;
+            features?: Record<string, boolean>;
+          };
           if (user?.id) {
-            token.features = await getUserFeatureMap(user.id);
-          } else if (token.sub && !token.features) {
-            token.features = await getUserFeatureMap(token.sub);
+            authToken.features = await getUserFeatureMap(user.id);
+            if ('username' in user && user.username) {
+              authToken.username = user.username as string;
+            } else {
+              const dbUser = await adapter.getUser(user.id);
+              if (dbUser && 'username' in dbUser) {
+                authToken.username = (dbUser as { username?: string }).username ?? authToken.username;
+              }
+            }
+          } else if (token.sub) {
+            if (!authToken.features) {
+              authToken.features = await getUserFeatureMap(token.sub);
+            }
+            if (!authToken.username) {
+              const dbUser = await adapter.getUser(token.sub);
+              if (dbUser && 'username' in dbUser) {
+                authToken.username = (dbUser as { username?: string }).username ?? authToken.username;
+              }
+            }
           }
-          return token;
+          return authToken;
         },
         session({ session, token }) {
+          const authToken = token as typeof token & {
+            username?: string;
+            features?: Record<string, boolean>;
+          };
           if (token.sub) {
             session.user.id = token.sub;
           }
           if (session.user) {
             session.user = {
               ...session.user,
-              features: token.features ?? {},
-            } as typeof session.user & { features: Record<string, boolean> };
+              username: authToken.username ?? (session.user as { username?: string }).username,
+              features: authToken.features ?? {},
+            } as typeof session.user & {
+              features: Record<string, boolean>;
+              username?: string;
+            };
           }
           return session;
         },
@@ -133,9 +162,9 @@ if (process.env.AUTH_SECRET) {
           id: 'credentials-signin',
           name: 'Credentials Sign in',
           credentials: {
-            email: {
-              label: 'Email',
-              type: 'email',
+            username: {
+              label: 'Username',
+              type: 'text',
             },
             password: {
               label: 'Password',
@@ -143,16 +172,20 @@ if (process.env.AUTH_SECRET) {
             },
           },
           authorize: async (credentials) => {
-            const { email, password } = credentials;
-            if (!email || !password) {
+            const { username, password } = credentials;
+            if (!username || !password) {
               return null;
             }
-            if (typeof email !== 'string' || typeof password !== 'string') {
+            if (typeof username !== 'string' || typeof password !== 'string') {
               return null;
             }
 
             // logic to verify if user exists
-            const user = await adapter.getUserByEmail(email);
+            const normalizedUsername = username.trim().toLowerCase();
+            if (!normalizedUsername) {
+              return null;
+            }
+            const user = await adapter.getUserByUsername(normalizedUsername);
             if (!user) {
               return null;
             }
@@ -177,6 +210,10 @@ if (process.env.AUTH_SECRET) {
           id: 'credentials-signup',
           name: 'Credentials Sign up',
           credentials: {
+            username: {
+              label: 'Username',
+              type: 'text',
+            },
             email: {
               label: 'Email',
               type: 'email',
@@ -187,35 +224,54 @@ if (process.env.AUTH_SECRET) {
             },
           },
           authorize: async (credentials) => {
-            const { email, password } = credentials;
-            if (!email || !password) {
+            const { username, email, password } = credentials;
+            if (!username || !email || !password) {
               return null;
             }
-            if (typeof email !== 'string' || typeof password !== 'string') {
+            if (
+              typeof username !== 'string' ||
+              typeof email !== 'string' ||
+              typeof password !== 'string'
+            ) {
               return null;
             }
 
             // logic to verify if user exists
-            const user = await adapter.getUserByEmail(email);
-            if (!user) {
-              const newUser = await adapter.createUser({
-                id: crypto.randomUUID(),
-                emailVerified: null,
-                email,
-              });
-              await adapter.linkAccount({
-                extraData: {
-                  password: await hash(password),
-                },
-                type: 'credentials',
-                userId: newUser.id,
-                providerAccountId: newUser.id,
-                provider: 'credentials',
-              });
-              await ensureUserFeatureDefaults(newUser.id);
-              return newUser;
+            const normalizedUsername = username.trim().toLowerCase();
+            if (!normalizedUsername) {
+              return null;
             }
-            return null;
+            const normalizedEmail = email.trim().toLowerCase();
+
+            const existingUsername = await adapter.getUserByUsername(normalizedUsername);
+            if (existingUsername) {
+              return null;
+            }
+
+            const existingEmail = await adapter.getUserByEmail(normalizedEmail);
+            if (existingEmail) {
+              return null;
+            }
+
+            const newUser = await adapter.createUser({
+              id: randomUUID(),
+              email: normalizedEmail,
+              emailVerified: null,
+              name: normalizedUsername,
+              image: null,
+              username: normalizedUsername,
+            });
+            await adapter.linkAccount({
+              extraData: {
+                password: await hash(password),
+              },
+              type: 'credentials',
+              userId: newUser.id,
+              providerAccountId: newUser.id,
+              provider: 'credentials',
+            });
+            await ensureUserFeatureDefaults(newUser.id);
+            return newUser;
           },
         }),
       ],

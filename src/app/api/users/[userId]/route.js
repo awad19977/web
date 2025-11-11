@@ -11,6 +11,7 @@ import {
 } from "@/app/api/utils/permissions";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const USERNAME_REGEX = /^[a-z0-9._-]{4,}$/i;
 
 export async function PATCH(request, { params }) {
   try {
@@ -28,9 +29,10 @@ export async function PATCH(request, { params }) {
     const body = await request.json();
     const name = typeof body?.name === "string" ? body.name.trim() : undefined;
     const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : undefined;
+    const username = typeof body?.username === "string" ? body.username.trim().toLowerCase() : undefined;
     const hasFeaturePayload = typeof body?.features !== "undefined";
 
-    if (!name && !email && !hasFeaturePayload) {
+    if (!name && !email && !username && !hasFeaturePayload) {
       return Response.json({ error: "No changes provided" }, { status: 400 });
     }
 
@@ -38,8 +40,15 @@ export async function PATCH(request, { params }) {
       return Response.json({ error: "A valid email address is required" }, { status: 400 });
     }
 
+    if (username && !USERNAME_REGEX.test(username)) {
+      return Response.json(
+        { error: "Username must be at least 4 characters and may only include letters, numbers, dots, dashes, or underscores" },
+        { status: 400 },
+      );
+    }
+
     const existingUsers = await sql`
-      SELECT id, name, email, "emailVerified", image
+      SELECT id, name, email, username, "emailVerified", image
       FROM auth_users
       WHERE id = ${userId}
     `;
@@ -57,6 +66,18 @@ export async function PATCH(request, { params }) {
       if (duplicateCheck.length) {
         return Response.json(
           { error: "Another account already uses this email" },
+          { status: 409 },
+        );
+      }
+    }
+
+    if (username && username !== existingUser.username) {
+      const duplicateCheck = await sql`
+        SELECT id FROM auth_users WHERE LOWER(username) = LOWER(${username}) AND id <> ${userId}
+      `;
+      if (duplicateCheck.length) {
+        return Response.json(
+          { error: "Another account already uses this username" },
           { status: 409 },
         );
       }
@@ -80,7 +101,8 @@ export async function PATCH(request, { params }) {
       let nextUser = existingUser;
       const shouldUpdateProfile = Boolean(
         (name && name !== existingUser.name) ||
-          (email && email !== existingUser.email),
+          (email && email !== existingUser.email) ||
+          (username && username !== existingUser.username),
       );
 
       if (shouldUpdateProfile) {
@@ -88,9 +110,10 @@ export async function PATCH(request, { params }) {
           UPDATE auth_users
           SET name = ${name ?? existingUser.name},
               email = ${email ?? existingUser.email},
+              username = ${username ?? existingUser.username},
               updated_at = NOW()
           WHERE id = ${userId}
-          RETURNING id, name, email, "emailVerified", image
+          RETURNING id, name, email, username, "emailVerified", image
         `;
         nextUser = updated;
       }
@@ -113,6 +136,18 @@ export async function PATCH(request, { params }) {
     });
   } catch (error) {
     console.error("Error updating user:", error);
+    if (error?.constraint === "auth_users_username_lower_idx") {
+      return Response.json(
+        { error: "Another account already uses this username" },
+        { status: 409 },
+      );
+    }
+    if (error?.code === "23505") {
+      return Response.json(
+        { error: "Another account already uses this email" },
+        { status: 409 },
+      );
+    }
     return Response.json({ error: "Failed to update user" }, { status: 500 });
   }
 }

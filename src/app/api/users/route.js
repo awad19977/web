@@ -11,6 +11,7 @@ import {
 } from "@/app/api/utils/permissions";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const USERNAME_REGEX = /^[a-z0-9._-]{4,}$/i;
 
 export async function GET(request) {
   try {
@@ -18,9 +19,9 @@ export async function GET(request) {
     if (response) return response;
 
     const users = await sql`
-      SELECT id, name, email, "emailVerified", image
+      SELECT id, name, email, username, "emailVerified", image
       FROM auth_users
-      ORDER BY LOWER(email)
+      ORDER BY LOWER(username)
     `;
 
     const featureRows = await sql`
@@ -56,11 +57,19 @@ export async function POST(request) {
 
     const name = String(body?.name ?? "").trim();
     const email = String(body?.email ?? "").trim().toLowerCase();
+    const username = String(body?.username ?? "").trim().toLowerCase();
     const password = String(body?.password ?? "").trim();
     const featuresInput = body?.features ?? DEFAULT_FEATURE_FLAGS;
 
     if (!name) {
       return Response.json({ error: "Name is required" }, { status: 400 });
+    }
+
+    if (!USERNAME_REGEX.test(username)) {
+      return Response.json(
+        { error: "Username must be at least 4 characters and may only include letters, numbers, dots, dashes, or underscores" },
+        { status: 400 },
+      );
     }
 
     if (!EMAIL_REGEX.test(email)) {
@@ -78,10 +87,17 @@ export async function POST(request) {
     const normalizedFeatures = normalizeFeatureMap(featuresInput);
 
     const result = await sql.transaction(async (tx) => {
+      const [conflictingUsername] = await tx`
+        SELECT id FROM auth_users WHERE LOWER(username) = LOWER(${username}) LIMIT 1
+      `;
+      if (conflictingUsername) {
+        throw Object.assign(new Error("Username already in use"), { code: "USERNAME_TAKEN" });
+      }
+
       const [newUser] = await tx`
-        INSERT INTO auth_users (name, email)
-        VALUES (${name}, ${email})
-        RETURNING id, name, email, "emailVerified", image
+        INSERT INTO auth_users (name, email, username)
+        VALUES (${name}, ${email}, ${username})
+        RETURNING id, name, email, username, "emailVerified", image
       `;
 
       await tx`
@@ -105,6 +121,10 @@ export async function POST(request) {
 
     return Response.json({ user: result }, { status: 201 });
   } catch (error) {
+    if (error?.code === "USERNAME_TAKEN" || error?.constraint === "auth_users_username_lower_idx") {
+      return Response.json({ error: "Username already in use" }, { status: 409 });
+    }
+
     if (error?.code === "23505") {
       return Response.json(
         { error: "An account with this email already exists" },

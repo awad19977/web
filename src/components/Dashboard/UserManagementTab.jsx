@@ -28,6 +28,8 @@ const feedbackStyles = {
     "border-rose-200/70 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200",
 };
 
+const USERNAME_REGEX = /^[a-z0-9._-]{4,}$/i;
+
 function FeatureToggleButton({
   feature,
   enabled,
@@ -143,6 +145,7 @@ function UserFormModal({
 }) {
   const isEdit = mode === "edit";
   const [name, setName] = useState(user?.name ?? "");
+  const [username, setUsername] = useState(user?.username ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [password, setPassword] = useState("");
   const [features, setFeatures] = useState(() => ({
@@ -178,6 +181,18 @@ function UserFormModal({
       return;
     }
 
+    if (!username.trim()) {
+      setError("Username is required.");
+      return;
+    }
+
+    if (!USERNAME_REGEX.test(username.trim())) {
+      setError(
+        "Username must be at least 4 characters and only include letters, numbers, dots, dashes, or underscores.",
+      );
+      return;
+    }
+
     if (!email.trim()) {
       setError("Email is required.");
       return;
@@ -196,6 +211,7 @@ function UserFormModal({
     try {
       await onSubmit({
         name: name.trim(),
+        username: username.trim().toLowerCase(),
         email: email.trim(),
         password: password.trim(),
         features,
@@ -231,6 +247,21 @@ function UserFormModal({
             />
           </label>
           <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Username
+            </span>
+            <input
+              type="text"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-gray-700 dark:bg-[#161616] dark:text-gray-100"
+              placeholder="ada.lovelace"
+            />
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              Letters, numbers, dots, dashes, and underscores; at least 4 characters.
+            </span>
+          </label>
+          <label className="flex flex-col gap-1 sm:col-span-2">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Email
             </span>
@@ -523,8 +554,8 @@ export function UserManagementTab() {
     );
   };
 
-  const handleCreateSubmit = async ({ name, email, password, features }) => {
-    const result = await createUser({ name, email, password, features });
+  const handleCreateSubmit = async ({ name, username, email, password, features }) => {
+    const result = await createUser({ name, username, email, password, features });
     setFeedback({
       type: "success",
       message: `Invited ${result.user.name || result.user.email}`,
@@ -532,9 +563,12 @@ export function UserManagementTab() {
     setCreateOpen(false);
   };
 
-  const handleEditSubmit = async ({ name, email, features }) => {
+  const handleEditSubmit = async ({ name, username, email, features }) => {
     if (!editingUser) return;
-    const result = await updateUser({ userId: editingUser.id, data: { name, email, features } });
+    const result = await updateUser({
+      userId: editingUser.id,
+      data: { name, username, email, features },
+    });
     setFeedback({
       type: "success",
       message: `Updated ${result.user.name || result.user.email}`,
@@ -701,6 +735,7 @@ export function UserManagementTab() {
                         )}
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
+                      <p className="text-xs font-medium text-gray-500 dark:text-gray-500">@{user.username}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-500">
                         {enabledCount} of {FEATURE_LIST.length} features enabled
                       </p>
