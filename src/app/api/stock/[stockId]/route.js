@@ -17,29 +17,39 @@ export async function PATCH(request, { params }) {
     return Response.json({ error: "Invalid stock id" }, { status: 400 });
   }
 
-  const existing = await sql`
-    SELECT id
+  const existingRows = await sql`
+    SELECT id, allow_extra_production, extra_production_limit
     FROM stock
     WHERE id = ${stockId}
   `;
 
-  if (!existing.length) {
+  if (!existingRows.length) {
     return Response.json({ error: "Stock item not found" }, { status: 404 });
   }
 
-  try {
-    const {
-      name,
-      description,
-      unit_cost,
-      supplier,
-      baseUnit,
-      conversions = [],
-    } = await request.json();
+  const existing = existingRows[0];
 
-    if (!name || !baseUnit?.id || !unit_cost) {
+  try {
+    const body = await request.json();
+
+    const name = typeof body?.name === "string" ? body.name.trim() : "";
+    const description = body?.description ? String(body.description).trim() : null;
+    const unit_cost = Number(body?.unit_cost ?? body?.unitCost ?? NaN);
+    const supplier = body?.supplier ? String(body.supplier).trim() : null;
+    const baseUnit = body?.baseUnit ?? body?.base_unit ?? null;
+    const conversions = Array.isArray(body?.conversions) ? body.conversions : [];
+    const allowExtraProvided =
+      Object.prototype.hasOwnProperty.call(body ?? {}, "allow_extra_production") ||
+      Object.prototype.hasOwnProperty.call(body ?? {}, "allowExtraProduction");
+    const allowExtraProductionInput = body?.allow_extra_production ?? body?.allowExtraProduction ?? existing.allow_extra_production;
+    const limitProvided =
+      Object.prototype.hasOwnProperty.call(body ?? {}, "extra_production_limit") ||
+      Object.prototype.hasOwnProperty.call(body ?? {}, "extraProductionLimit");
+    const extraProductionLimitInput = body?.extra_production_limit ?? body?.extraProductionLimit ?? existing.extra_production_limit;
+
+    if (!name || !baseUnit?.id || !Number.isFinite(unit_cost) || unit_cost <= 0) {
       return Response.json(
-        { error: "Name, base unit, and unit_cost are required" },
+        { error: "Name, base unit, and a positive unit_cost are required" },
         { status: 400 },
       );
     }
@@ -52,7 +62,7 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    const sanitizedConversions = [];
+  const sanitizedConversions = [];
     const seenConversionIds = new Set();
     for (const conversion of conversions ?? []) {
       const id = conversion?.id ?? conversion?.unitId ?? null;
@@ -66,6 +76,21 @@ export async function PATCH(request, { params }) {
       sanitizedConversions.push({ id, factor });
     }
 
+    const allowExtraProduction = allowExtraProvided
+      ? Boolean(allowExtraProductionInput)
+      : Boolean(existing.allow_extra_production);
+
+    const resolvedLimit = allowExtraProduction
+      ? (limitProvided ? Number(extraProductionLimitInput) : Number(existing.extra_production_limit ?? 0))
+      : 0;
+
+    if (allowExtraProduction && (!Number.isFinite(resolvedLimit) || resolvedLimit <= 0)) {
+      return Response.json(
+        { error: "Provide a positive extra production limit or disable extra production" },
+        { status: 400 },
+      );
+    }
+
     const result = await sql.transaction(async (tx) => {
       const [updatedStock] = await tx`
         UPDATE stock
@@ -75,6 +100,8 @@ export async function PATCH(request, { params }) {
             unit_cost = ${unit_cost},
             supplier = ${supplier},
             base_unit_id = ${baseUnitRecord.id},
+            allow_extra_production = ${allowExtraProduction},
+            extra_production_limit = ${allowExtraProduction ? resolvedLimit : 0},
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ${stockId}
         RETURNING *

@@ -60,6 +60,17 @@ const createSql = () => {
     }
   };
 
+  // Execute a raw SQL string with parameter array safely
+  sql.raw = async (text, params = []) => {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(text, params);
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  };
+
   return sql;
 };
 
@@ -97,6 +108,42 @@ export async function logStockTransaction({
   const [record] = await runner`
     INSERT INTO stock_transactions (stock_id, type, quantity, unit_id, entered_quantity, reason, metadata)
     VALUES (${payload.stock_id}, ${payload.type}, ${payload.quantity}, ${payload.unit_id}, ${payload.entered_quantity}, ${payload.reason}, ${payload.metadata}::jsonb)
+    RETURNING *
+  `;
+
+  return record;
+}
+
+export async function logProductTransaction({
+  runner = sql,
+  productId,
+  type,
+  quantity,
+  reason = null,
+  metadata = {},
+}) {
+  if (!productId) throw new Error("productId is required for product transaction log");
+  if (!type) throw new Error("type is required for product transaction log");
+  const normalizedQuantity = Number(quantity);
+  if (!Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0) {
+    throw new Error("quantity must be a positive number for product transaction log");
+  }
+
+  await runner`
+    CREATE TABLE IF NOT EXISTS product_transactions (
+      id SERIAL PRIMARY KEY,
+      product_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      quantity NUMERIC NOT NULL CHECK (quantity > 0),
+      reason TEXT,
+      metadata JSONB DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  const [record] = await runner`
+    INSERT INTO product_transactions (product_id, type, quantity, reason, metadata)
+    VALUES (${productId}, ${type}, ${normalizedQuantity}, ${reason}, ${metadata}::jsonb)
     RETURNING *
   `;
 

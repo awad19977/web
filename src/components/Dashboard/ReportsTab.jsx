@@ -1,5 +1,7 @@
 import { FEATURE_KEYS } from "@/constants/featureFlags";
 import { SummaryCard } from "./SummaryCard";
+import { StockTransactionsReport } from "./StockTransactionsReport";
+import { ProductTransactionsReport } from "./ProductTransactionsReport";
 
 function StatBlock({ label, value, helpText }) {
   return (
@@ -139,6 +141,19 @@ export function ReportsTab({ reports, reportsLoading, features }) {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Stock Transactions</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Filter and review stock movement per item.</p>
+          <StockTransactionsReport />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Product Transactions</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Track increases from production and decreases from sales.</p>
+          <ProductTransactionsReport />
+        </div>
       </div>
     </div>
   );

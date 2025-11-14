@@ -88,20 +88,31 @@ export async function POST(request) {
     const { response } = await requireFeature(request, FEATURE_KEYS.STOCK);
     if (response) return response;
 
-    const {
-      name,
-      description,
-      unit,
-  baseUnit,
-      unit_cost,
-      supplier,
-      current_quantity = 0,
-      conversions = [],
-    } = await request.json();
+    const body = await request.json();
 
-    if (!name || !baseUnit?.id || !unit_cost) {
+    const name = typeof body?.name === "string" ? body.name.trim() : "";
+    const description = body?.description ? String(body.description).trim() : null;
+    const baseUnit = body?.baseUnit ?? body?.base_unit ?? null;
+    const unit_cost = Number(body?.unit_cost ?? body?.unitCost ?? NaN);
+    const supplier = body?.supplier ? String(body.supplier).trim() : null;
+    const current_quantity = Number(body?.current_quantity ?? body?.currentQuantity ?? 0);
+    const conversions = Array.isArray(body?.conversions) ? body.conversions : [];
+    const allowExtraProductionInput = body?.allow_extra_production ?? body?.allowExtraProduction ?? false;
+    const extraProductionLimitInput = body?.extra_production_limit ?? body?.extraProductionLimit ?? 0;
+
+    if (!name || !baseUnit?.id || !Number.isFinite(unit_cost) || unit_cost <= 0) {
       return Response.json(
-        { error: "Name, base unit, and unit_cost are required" },
+        { error: "Name, base unit, and a positive unit_cost are required" },
+        { status: 400 },
+      );
+    }
+
+    const allowExtraProduction = Boolean(allowExtraProductionInput);
+    const extraProductionLimit = Number(extraProductionLimitInput ?? 0);
+
+    if (allowExtraProduction && (!Number.isFinite(extraProductionLimit) || extraProductionLimit <= 0)) {
+      return Response.json(
+        { error: "Provide a positive extra production limit or disable extra production" },
         { status: 400 },
       );
     }
@@ -130,11 +141,12 @@ export async function POST(request) {
     }
 
     const initialUnitName = baseUnitRecord.name ?? null;
+    const normalizedQuantity = Number.isFinite(current_quantity) ? current_quantity : 0;
 
     const result = await sql.transaction(async (tx) => {
       const [newStock] = await tx`
-        INSERT INTO stock (name, description, unit, current_quantity, unit_cost, supplier)
-        VALUES (${name}, ${description}, ${initialUnitName}, ${current_quantity}, ${unit_cost}, ${supplier})
+        INSERT INTO stock (name, description, unit, current_quantity, unit_cost, supplier, allow_extra_production, extra_production_limit, base_unit_id)
+        VALUES (${name}, ${description}, ${initialUnitName}, ${normalizedQuantity}, ${unit_cost}, ${supplier}, ${allowExtraProduction}, ${allowExtraProduction ? extraProductionLimit : 0}, ${baseUnitRecord.id})
         RETURNING *
       `;
 
@@ -145,7 +157,7 @@ export async function POST(request) {
         conversions: sanitizedConversions,
       });
 
-      const startingQuantity = Number(current_quantity ?? 0);
+  const startingQuantity = Number(normalizedQuantity ?? 0);
       if (Number.isFinite(startingQuantity) && startingQuantity > 0) {
         await logStockTransaction({
           runner: tx,

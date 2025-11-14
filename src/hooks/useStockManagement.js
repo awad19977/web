@@ -29,6 +29,8 @@ export function useStockManagement() {
           unit_cost: Number(item.unit_cost ?? 0),
           total_purchased: Number(item.total_purchased ?? 0),
           total_cost_purchased: Number(item.total_cost_purchased ?? 0),
+          allow_extra_production: Boolean(item.allow_extra_production ?? item.allowExtraProduction ?? false),
+          extra_production_limit: Number(item.extra_production_limit ?? item.extraProductionLimit ?? 0),
           units,
           base_unit: baseUnit,
         };

@@ -1,4 +1,4 @@
-import sql from "@/app/api/utils/sql";
+import sql, { logProductTransaction } from "@/app/api/utils/sql";
 import { requireFeature } from "@/app/api/utils/auth";
 import { FEATURE_KEYS } from "@/constants/featureFlags";
 
@@ -69,6 +69,15 @@ export async function POST(request) {
         WHERE id = ${product_id}
         RETURNING *
       `;
+
+      await logProductTransaction({
+        runner: tx,
+        productId: product_id,
+        type: "decrease",
+        quantity: quantity,
+        reason: "sale",
+        metadata: { sale_id: createdSale.id },
+      });
       return { sale: createdSale, updatedProduct: productRow };
     });
 

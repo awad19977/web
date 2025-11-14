@@ -1,9 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Factory, Loader2, Plus } from "lucide-react";
 import { useProductionManagement } from "@/hooks/useProductionManagement";
+import useUser from "@/utils/useUser";
+import { FEATURE_KEYS } from "@/constants/featureFlags";
 import { useProductManagement } from "@/hooks/useProductManagement";
 import { CreateProductionOrderForm } from "./CreateProductionOrderForm";
 import { ProductionOrdersTable } from "./ProductionOrdersTable";
+import { CompleteProductionOrderForm } from "./CompleteProductionOrderForm";
 
 const parseCompletedQuantity = (initialValue) => {
   if (typeof window === "undefined") return null;
@@ -35,6 +38,10 @@ export function ProductionManagementTab() {
   const [feedback, setFeedback] = useState(null);
   const [formError, setFormError] = useState(null);
   const [completingOrderId, setCompletingOrderId] = useState(null);
+  const [completingOrder, setCompletingOrder] = useState(null);
+  const { user } = useUser();
+  const featureFlags = user?.features ?? {};
+  const allowExtras = featureFlags[FEATURE_KEYS.PRODUCTION_EXTRA] !== false;
 
   const {
     orders,
@@ -91,38 +98,29 @@ export function ProductionManagementTab() {
     [createOrder]
   );
 
-  const handleCompleteOrder = useCallback(
-    (order) => {
-      if (!order?.id) return;
+  const handleCompleteOrder = useCallback((order) => {
+    if (!order?.id) return;
+    setCompletingOrder(order);
+  }, []);
 
-      const suggested = order.quantity_to_produce ?? order.quantity_produced ?? 0;
-      const quantityProduced = parseCompletedQuantity(suggested);
-
-      if (quantityProduced === null) {
-        return;
-      }
-
-      if (quantityProduced === undefined) {
-        setFeedback({
-          type: "error",
-          message: "Enter a valid quantity to complete this order.",
-        });
-        return;
-      }
-
-      setCompletingOrderId(order.id);
+  const handleSubmitCompletion = useCallback(
+    ({ quantity_produced, extras = [] }) => {
+      if (!completingOrder?.id) return;
+      setCompletingOrderId(completingOrder.id);
       completeOrder(
         {
-          orderId: order.id,
+          orderId: completingOrder.id,
           status: "completed",
-          quantity_produced: quantityProduced,
+          quantity_produced,
+          extras,
         },
         {
           onSuccess: () => {
             setFeedback({
               type: "success",
-              message: `Marked ${order?.product_name ?? "Order"} as completed.`,
+              message: `Marked ${completingOrder?.product_name ?? "Order"} as completed.`,
             });
+            setCompletingOrder(null);
             setCompletingOrderId(null);
           },
           onError: (mutationError) => {
@@ -135,7 +133,7 @@ export function ProductionManagementTab() {
         }
       );
     },
-    [completeOrder]
+    [completeOrder, completingOrder]
   );
 
   const feedbackStyle = useMemo(() => {
@@ -230,6 +228,16 @@ export function ProductionManagementTab() {
             submitError={formError}
           />
         </div>
+      ) : null}
+
+      {completingOrder ? (
+        <CompleteProductionOrderForm
+          order={completingOrder}
+          onSubmit={handleSubmitCompletion}
+          onClose={() => setCompletingOrder(null)}
+          isSubmitting={completeOrderLoading && completingOrderId === completingOrder.id}
+          allowExtras={allowExtras}
+        />
       ) : null}
     </div>
   );

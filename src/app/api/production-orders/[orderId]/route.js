@@ -1,6 +1,6 @@
 import { FEATURE_KEYS } from "@/constants/featureFlags";
 import { requireFeature } from "@/app/api/utils/auth";
-import sql, { logStockTransaction } from "@/app/api/utils/sql";
+import sql, { logStockTransaction, logProductTransaction } from "@/app/api/utils/sql";
 
 const toNumber = (value, fallback = 0) => {
   const number = Number(value);
@@ -71,6 +71,7 @@ export async function PATCH(request, { params }) {
 
   const desiredStatus = typeof payload?.status === "string" ? payload.status.toLowerCase() : null;
   const quantityInput = payload?.quantity_produced ?? payload?.quantityProduced;
+  const extrasInput = Array.isArray(payload?.extras) ? payload.extras : [];
   const shouldStart = payload?.started_at === true || payload?.start === true;
   const allowedStatuses = new Set(["planned", "in_progress", "completed", "cancelled"]);
 
@@ -233,11 +234,104 @@ export async function PATCH(request, { params }) {
             });
           }
 
+          // Handle extra ingredients if provided and allowed
+          if (Array.isArray(extrasInput) && extrasInput.length) {
+            // Aggregate extras per stock to enforce limits against totals
+            const totalsByStock = new Map();
+            for (const extra of extrasInput) {
+              const stockId = Number(extra?.stock_id ?? extra?.stockId);
+              const extraQty = Number(extra?.quantity);
+              if (!Number.isInteger(stockId) || stockId <= 0) continue;
+              if (!Number.isFinite(extraQty) || extraQty <= 0) continue;
+              totalsByStock.set(stockId, (totalsByStock.get(stockId) ?? 0) + extraQty);
+            }
+
+            if (totalsByStock.size) {
+              const stockIds = Array.from(totalsByStock.keys());
+              // Sum extras already used for this order to enforce cumulative limits
+              const usedRows = await tx`
+                SELECT stock_id, SUM(quantity) AS used
+                FROM stock_transactions
+                WHERE reason = 'production_extra'
+                  AND (metadata->>'production_order_id') = ${String(orderId)}
+                  AND stock_id = ANY(${stockIds}::int[])
+                GROUP BY stock_id
+              `;
+              const usedByStock = new Map((usedRows ?? []).map((r) => [Number(r.stock_id), Number(r.used ?? 0)]));
+
+              const rows = await tx`
+                SELECT id, name, current_quantity, base_unit_id, unit_cost, allow_extra_production, extra_production_limit
+                FROM stock
+                WHERE id = ANY(${stockIds}::int[])
+                FOR UPDATE
+              `;
+
+              const stockById = new Map(rows.map((r) => [r.id, r]));
+
+              // Validate all first
+              for (const [stockId, totalQty] of totalsByStock.entries()) {
+                const stk = stockById.get(stockId);
+                if (!stk) {
+                  return { type: "error", status: 400, message: "Selected extra stock item not found" };
+                }
+                if (stk.allow_extra_production !== true) {
+                  return { type: "error", status: 400, message: `Extra ingredients not allowed for ${stk.name}` };
+                }
+                const absoluteLimit = Number(stk.extra_production_limit ?? 0);
+                if (Number.isFinite(absoluteLimit) && absoluteLimit > 0) {
+                  // cumulative enforcement across order
+                  const alreadyUsed = Number(usedByStock.get(stockId) ?? 0);
+                  if (alreadyUsed + totalQty - absoluteLimit > 1e-9) {
+                    return { type: "error", status: 400, message: `Extra quantity for ${stk.name} exceeds allowed limit` };
+                  }
+                }
+                if ((Number(stk.current_quantity ?? 0) + 1e-9) < totalQty) {
+                  return { type: "error", status: 400, message: `Not enough ${stk.name} available for extras` };
+                }
+              }
+
+              // Apply updates and logs per stock
+              for (const [stockId, totalQty] of totalsByStock.entries()) {
+                const stk = stockById.get(stockId);
+                await tx`
+                  UPDATE stock
+                  SET current_quantity = current_quantity - ${totalQty}
+                  WHERE id = ${stockId}
+                `;
+
+                await logStockTransaction({
+                  runner: tx,
+                  stockId,
+                  type: "decrease",
+                  quantity: totalQty,
+                  unitId: stk?.base_unit_id ?? null,
+                  enteredQuantity: totalQty,
+                  reason: "production_extra",
+                  metadata: { production_order_id: orderId, product_id: existing.product_id },
+                });
+
+                const unitCost = Number(stk.unit_cost ?? 0);
+                if (Number.isFinite(unitCost) && unitCost > 0) {
+                  productionCost += unitCost * totalQty;
+                }
+              }
+            }
+          }
+
           await tx`
             UPDATE products
             SET current_stock = current_stock + ${producedDelta}, updated_at = NOW()
             WHERE id = ${existing.product_id}
           `;
+
+          await logProductTransaction({
+            runner: tx,
+            productId: existing.product_id,
+            type: "increase",
+            quantity: producedDelta,
+            reason: "production_output",
+            metadata: { production_order_id: orderId },
+          });
         }
       }
 

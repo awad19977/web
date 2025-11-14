@@ -1,5 +1,5 @@
 import { getToken } from '@auth/core/jwt';
-import { getUserFeatureMap, hasFeatureEnabled } from './permissions';
+import { getUserFeatureMap, hasFeatureEnabled, DEFAULT_FEATURE_FLAGS } from './permissions';
 
 const isSecure = () => (process.env.AUTH_URL ?? '').startsWith('https');
 
@@ -18,9 +18,19 @@ export const getAuthContext = async (request) => {
     return { user: null };
   }
 
-  const featureMap =
-    (token.features && typeof token.features === 'object' ? token.features : null) ??
-    (await getUserFeatureMap(token.sub));
+  let featureMap = null;
+  if (token.features && typeof token.features === 'object') {
+    featureMap = token.features;
+  }
+
+  if (!featureMap) {
+    try {
+      featureMap = await getUserFeatureMap(token.sub);
+    } catch (error) {
+      console.error('Failed to load user feature flags', error);
+      featureMap = { ...DEFAULT_FEATURE_FLAGS };
+    }
+  }
 
   return {
     user: {

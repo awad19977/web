@@ -17,6 +17,8 @@ const fetchStock = async () => {
     unit: item?.unit ?? item?.base_unit?.name ?? null,
     unit_cost: Number(item?.unit_cost ?? item?.base_unit?.unit_cost ?? 0),
     current_quantity: Number(item?.current_quantity ?? 0),
+    allow_extra_production: Boolean(item?.allow_extra_production ?? item?.allowExtraProduction ?? false),
+    extra_production_limit: Number(item?.extra_production_limit ?? item?.extraProductionLimit ?? 0),
   }));
 };
 
