@@ -71,7 +71,7 @@ export function AddExpenseForm({ onClose, onSubmit, loading, error }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-[#1E1E1E] rounded-lg p-6 w-full max-w-md mx-4">
+      <div className="bg-white dark:bg-[#1E1E1E] rounded-lg p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
           Add Expense
         </h3>

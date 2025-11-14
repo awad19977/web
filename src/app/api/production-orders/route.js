@@ -24,6 +24,7 @@ const normalizeOrder = (row) => {
     quantity_to_produce: toNumber(row.quantity_to_produce),
     quantity_produced: toNumber(row.quantity_produced),
     status: typeof row.status === "string" ? row.status.toLowerCase() : "planned",
+    status_reason: row.status_reason ?? null,
     production_cost: toNumber(row.production_cost),
     started_at: row.started_at ? new Date(row.started_at).toISOString() : null,
     completed_at: row.completed_at ? new Date(row.completed_at).toISOString() : null,

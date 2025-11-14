@@ -25,7 +25,7 @@ export function StockManagementTab() {
   const featureFlags = user?.features ?? {};
 
   const canManageStock = featureFlags[FEATURE_KEYS.STOCK] !== false;
-  const canPurchaseStock = canManageStock;
+  const canPurchaseStock = featureFlags[FEATURE_KEYS.PURCHASES_CREATE] !== false;
   const canCreateStock = canManageStock;
   const canEditStock = featureFlags[FEATURE_KEYS.STOCK_EDIT] !== false;
   const canDeleteStock = featureFlags[FEATURE_KEYS.STOCK_DELETE] !== false;

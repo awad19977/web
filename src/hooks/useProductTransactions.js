@@ -6,6 +6,7 @@ function buildQuery(params) {
   if (params?.type) qp.set("type", String(params.type));
   if (params?.from) qp.set("from", new Date(params.from).toISOString());
   if (params?.to) qp.set("to", new Date(params.to).toISOString());
+  if (params?.scope) qp.set("scope", String(params.scope));
   const s = qp.toString();
   return s ? `?${s}` : "";
 }

@@ -4,7 +4,7 @@ import { FEATURE_KEYS } from "@/constants/featureFlags";
 
 export async function GET(request) {
   try {
-    const { response } = await requireFeature(request, FEATURE_KEYS.REPORTS);
+    const { response } = await requireFeature(request, FEATURE_KEYS.REPORTS_STOCK_TRANSACTIONS);
     if (response) return response;
 
     const { searchParams } = new URL(request.url);

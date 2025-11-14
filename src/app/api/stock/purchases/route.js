@@ -5,8 +5,13 @@ import { FEATURE_KEYS } from "@/constants/featureFlags";
 // Get all stock purchases
 export async function GET(request) {
   try {
-    const { response } = await requireFeature(request, FEATURE_KEYS.STOCK);
+      const { response } = await requireFeature(request, FEATURE_KEYS.PURCHASES);
     if (response) return response;
+
+    const url = new URL(request.url);
+    const page = Math.max(1, Number(url.searchParams.get("page") || 1));
+    const pageSize = Math.min(200, Math.max(1, Number(url.searchParams.get("pageSize") || 20)));
+    const offset = (page - 1) * pageSize;
 
     const purchases = await sql`
       SELECT 
@@ -14,14 +19,18 @@ export async function GET(request) {
         s.name as stock_name,
         s.unit as stock_unit,
         su.name as purchase_unit_name,
-        su.symbol as purchase_unit_symbol
+        su.symbol as purchase_unit_symbol,
+        COUNT(*) OVER()::bigint AS total_count
       FROM stock_purchases sp
       JOIN stock s ON sp.stock_id = s.id
       LEFT JOIN stock_units su ON su.id = sp.unit_id
       ORDER BY sp.purchase_date DESC
+      LIMIT ${pageSize} OFFSET ${offset}
     `;
 
-    return Response.json(purchases);
+    const total = purchases[0] ? Number(purchases[0].total_count || 0) : 0;
+
+    return Response.json({ purchases, meta: { total, page, pageSize } });
   } catch (error) {
     console.error("Error fetching stock purchases:", error);
     return Response.json(
@@ -34,7 +43,7 @@ export async function GET(request) {
 // Create new stock purchase
 export async function POST(request) {
   try {
-    const { response } = await requireFeature(request, FEATURE_KEYS.STOCK);
+      const { response } = await requireFeature(request, FEATURE_KEYS.PURCHASES_CREATE);
     if (response) return response;
 
     const {

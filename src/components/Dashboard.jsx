@@ -12,6 +12,7 @@ import { ReportsTab } from "./Dashboard/ReportsTab";
 import { UnitsManagementTab } from "./Dashboard/UnitsManagementTab";
 import { ProductsManagementTab } from "./Dashboard/ProductsManagementTab";
 import { ProductionManagementTab } from "./Dashboard/ProductionManagementTab";
+import { PurchasesTab } from "./Dashboard/PurchasesTab";
 import useUser from "@/utils/useUser";
 import { FEATURE_KEYS } from "@/constants/featureFlags";
 import { DASHBOARD_TABS } from "./Dashboard/tabConfig";
@@ -50,8 +51,18 @@ export default function Dashboard({
   }, [availableTabs, activeTab, setActiveTab]);
 
   const hasReportsAccess = featureFlags[FEATURE_KEYS.REPORTS] !== false;
+  // Default start/end to last 30 days
+  const defaultEnd = new Date();
+  const defaultStart = new Date();
+  defaultStart.setDate(defaultStart.getDate() - 30);
+
+  const [reportsStart, setReportsStart] = useState(defaultStart.toISOString().slice(0, 10));
+  const [reportsEnd, setReportsEnd] = useState(defaultEnd.toISOString().slice(0, 10));
+
   const { data: reports, isLoading: reportsLoading } = useDashboardReports({
     enabled: hasReportsAccess,
+    start: reportsStart,
+    end: reportsEnd,
   });
 
   if (!availableTabs.length) {
@@ -86,6 +97,10 @@ export default function Dashboard({
         <StockManagementTab />
       )}
 
+      {activeTab === "purchases" && featureFlags[FEATURE_KEYS.PURCHASES] !== false && (
+        <PurchasesTab canCreate={featureFlags[FEATURE_KEYS.PURCHASES_CREATE] !== false} />
+      )}
+
       {activeTab === "products" && featureFlags[FEATURE_KEYS.PRODUCTS] !== false && (
         <ProductsManagementTab />
       )}
@@ -103,7 +118,15 @@ export default function Dashboard({
       )}
 
       {activeTab === "reports" && featureFlags[FEATURE_KEYS.REPORTS] !== false && (
-        <ReportsTab reports={reports} reportsLoading={reportsLoading} features={featureFlags} />
+        <ReportsTab
+          reports={reports}
+          reportsLoading={reportsLoading}
+          features={featureFlags}
+          start={reportsStart}
+          end={reportsEnd}
+          setStart={setReportsStart}
+          setEnd={setReportsEnd}
+        />
       )}
 
       {activeTab === "expenses" && featureFlags[FEATURE_KEYS.EXPENSES] !== false && (

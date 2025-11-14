@@ -4,11 +4,9 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useProductTransactions } from "@/hooks/useProductTransactions";
 
-export function ProductTransactionsReport() {
+export function ProductTransactionsReport({ start, end }) {
   const [productId, setProductId] = useState("");
   const [type, setType] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
 
   const { data: products = [] } = useQuery({
     queryKey: ["products:min"],
@@ -26,10 +24,10 @@ export function ProductTransactionsReport() {
     () => ({
       productId: productId ? Number(productId) : undefined,
       type: type || undefined,
-      from: from || undefined,
-      to: to || undefined,
+      from: start || undefined,
+      to: end || undefined,
     }),
-    [productId, type, from, to]
+    [productId, type, start, end]
   );
 
   const { data = [], isLoading, error } = useProductTransactions(filters);
@@ -63,13 +61,49 @@ export function ProductTransactionsReport() {
             <option value="adjustment">Adjustment</option>
           </select>
         </div>
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">From</label>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121212] px-2 py-1 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">To</label>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121212] px-2 py-1 text-sm" />
+        <div className="ml-auto flex items-center gap-2">
+          <div className="text-xs text-gray-500">Range:</div>
+          <div className="text-sm text-gray-700">{start ?? "-"} → {end ?? "-"}</div>
+          <button
+            type="button"
+            onClick={() => {
+              // Print current table
+              const title = 'Product Transactions';
+              const rowsHtml = data.map((t) => `
+                <tr>
+                  <td style="padding:8px;border:1px solid #ddd">${t.created_at ? new Date(t.created_at).toLocaleString() : '-'}</td>
+                  <td style="padding:8px;border:1px solid #ddd">${t.product_name ?? t.product_id}</td>
+                  <td style="padding:8px;border:1px solid #ddd">${t.type}</td>
+                  <td style="padding:8px;border:1px solid #ddd;text-align:right">${Number(t.quantity ?? 0)}</td>
+                  <td style="padding:8px;border:1px solid #ddd">${t.reason || ''}</td>
+                </tr>`).join('');
+              const html = `
+                <html><head><meta charset="utf-8" /><title>${title}</title>
+                <style>body{font-family:system-ui;padding:24px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px}th{background:#f7f7f7}</style>
+                </head><body><h1>${title}</h1><p>Range: ${start ?? '-'} → ${end ?? '-'}</p><table><thead><tr><th>Date</th><th>Product</th><th>Type</th><th style="text-align:right">Quantity</th><th>Reason</th></tr></thead><tbody>${rowsHtml}</tbody></table></body></html>`;
+              const w = window.open('', '_blank');
+              if (!w) return alert('Unable to open print window. Check popup blocker.');
+              try {
+                const blob = new Blob([html], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const newWin = window.open(url, '_blank');
+                if (!newWin) {
+                  URL.revokeObjectURL(url);
+                  return alert('Unable to open print window. Check popup blocker.');
+                }
+                setTimeout(() => {
+                  try { newWin.print(); } catch (err) { console.error('Print failed', err); alert('Print failed. Please try manually from the new tab.'); }
+                  try { URL.revokeObjectURL(url); } catch (e) { }
+                }, 300);
+              } catch (err) {
+                console.error('Failed to prepare print window', err);
+                alert('Unable to open print window. Check popup blocker.');
+              }
+            }}
+            className="rounded-md bg-blue-600 px-3 py-1 text-white text-sm"
+          >
+            Print
+          </button>
         </div>
       </div>
 
@@ -91,7 +125,7 @@ export function ProductTransactionsReport() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td className="py-3 text-gray-500 dark:text-gray-400" colSpan={5}>Loading...</td></tr>
+              <tr><td className="py-3 text-gray-500 dark:text-gray-400" colSpan={6}>Loading...</td></tr>
             ) : data.length === 0 ? (
               <tr><td className="py-3 text-gray-500 dark:text-gray-400" colSpan={5}>No transactions found</td></tr>
             ) : (

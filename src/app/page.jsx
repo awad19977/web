@@ -63,12 +63,20 @@ export default function HomePage() {
                 <span className="text-white font-bold text-sm">PM</span>
               </div>
               <div className="ml-2 flex items-center">
-                <span className="text-[#111111] dark:text-white font-medium text-lg">
-                  Production
-                </span>
-                <span className="text-[#18B84E] dark:text-[#16A249] font-medium text-lg">
-                  Manager
-                </span>
+                {(() => {
+                  const appTitle = process.env.NEXT_PUBLIC_APP_TITLE || "Production Manager";
+                  const parts = String(appTitle).trim().split(" ");
+                  const last = parts.length > 1 ? parts.pop() : null;
+                  const first = parts.join(" ");
+                  return (
+                    <>
+                      <span className="text-[#111111] dark:text-white font-medium text-lg">{first}</span>
+                      {last ? (
+                        <span className="text-[#18B84E] dark:text-[#16A249] font-medium text-lg"> {last}</span>
+                      ) : null}
+                    </>
+                  );
+                })()}
               </div>
             </div>
             <div className="w-10" /> {/* Spacer for centering */}

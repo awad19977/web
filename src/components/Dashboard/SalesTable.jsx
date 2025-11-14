@@ -20,6 +20,9 @@ export function SalesTable({ sales, loading, error }) {
                 Quantity
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Damaged
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Unit Price
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -73,6 +76,16 @@ export function SalesTable({ sales, loading, error }) {
                     </td>
                     <td className="px-6 py-4 text-gray-900 dark:text-white">
                       {quantity}
+                    </td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-white">
+                      {Number(sale.damaged_quantity ?? 0) > 0 ? (
+                        <span className="text-rose-700 dark:text-rose-300">{Number(sale.damaged_quantity).toLocaleString()}</span>
+                      ) : (
+                        <span className="text-gray-500">—</span>
+                      )}
+                      {sale.damage_reason ? (
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{sale.damage_reason}</div>
+                      ) : null}
                     </td>
                     <td className="px-6 py-4 text-gray-900 dark:text-white">
                       ${unitPrice.toLocaleString(undefined, {

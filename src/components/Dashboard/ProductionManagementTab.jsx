@@ -100,8 +100,64 @@ export function ProductionManagementTab() {
 
   const handleCompleteOrder = useCallback((order) => {
     if (!order?.id) return;
+    if ((order?.status ?? 'planned') !== 'planned') {
+      setFeedback({ type: 'error', message: 'Cannot change an order once it has progressed beyond planned.' });
+      return;
+    }
     setCompletingOrder(order);
   }, []);
+
+  const [actioningOrder, setActioningOrder] = useState(null);
+  const [actionType, setActionType] = useState(null); // 'cancel' | 'fail'
+  const [actionReason, setActionReason] = useState("");
+
+  const handleCancelOrder = useCallback((order) => {
+    if (!order?.id) return;
+    if ((order?.status ?? 'planned') !== 'planned') {
+      setFeedback({ type: 'error', message: 'Cannot change an order once it has progressed beyond planned.' });
+      return;
+    }
+    setActioningOrder(order);
+    setActionType("cancel");
+    setActionReason("");
+  }, []);
+
+  const handleFailOrder = useCallback((order) => {
+    if (!order?.id) return;
+    if ((order?.status ?? 'planned') !== 'planned') {
+      setFeedback({ type: 'error', message: 'Cannot change an order once it has progressed beyond planned.' });
+      return;
+    }
+    setActioningOrder(order);
+    setActionType("fail");
+    setActionReason("");
+  }, []);
+
+  const handleSubmitAction = useCallback(() => {
+    if (!actioningOrder?.id || !actionType) return;
+    const status = actionType === "cancel" ? "cancelled" : "failed";
+    if (!actionReason || String(actionReason).trim() === "") {
+      setFeedback({ type: "error", message: "Reason is required" });
+      return;
+    }
+    setCompletingOrderId(actioningOrder.id);
+    completeOrder(
+      { orderId: actioningOrder.id, status, reason: actionReason.trim() },
+      {
+        onSuccess: () => {
+          setFeedback({ type: "success", message: `${actioningOrder?.product_name ?? 'Order'} marked as ${status}.` });
+          setActioningOrder(null);
+          setActionType(null);
+          setActionReason("");
+          setCompletingOrderId(null);
+        },
+        onError: (mutationError) => {
+          setFeedback({ type: "error", message: getErrorMessage(mutationError) });
+          setCompletingOrderId(null);
+        },
+      }
+    );
+  }, [actionType, actionReason, actioningOrder, completeOrder]);
 
   const handleSubmitCompletion = useCallback(
     ({ quantity_produced, extras = [] }) => {
@@ -214,6 +270,8 @@ export function ProductionManagementTab() {
         error={getErrorMessage(error)}
         onRetry={() => refetch()}
         onComplete={handleCompleteOrder}
+        onCancel={handleCancelOrder}
+        onFail={handleFailOrder}
         completingOrderId={completeOrderLoading ? completingOrderId : null}
       />
 
@@ -238,6 +296,22 @@ export function ProductionManagementTab() {
           isSubmitting={completeOrderLoading && completingOrderId === completingOrder.id}
           allowExtras={allowExtras}
         />
+      ) : null}
+
+      {actioningOrder ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30">
+          <div className="bg-white dark:bg-[#1E1E1E] rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              {actionType === 'cancel' ? 'Cancel Production Order' : 'Mark Production Order Failed'}
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Provide a reason (required).</p>
+            <textarea value={actionReason} onChange={(e) => setActionReason(e.target.value)} rows={4} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+            <div className="flex items-center justify-end gap-3 mt-4">
+              <button onClick={() => { setActioningOrder(null); setActionType(null); setActionReason(''); }} className="px-3 py-2 border rounded-md">Cancel</button>
+              <button onClick={handleSubmitAction} className="px-3 py-2 bg-rose-600 text-white rounded-md">Confirm</button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

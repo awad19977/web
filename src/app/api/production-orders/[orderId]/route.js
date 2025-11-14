@@ -24,6 +24,7 @@ const normalizeOrder = (row) => {
     quantity_to_produce: toNumber(row.quantity_to_produce),
     quantity_produced: toNumber(row.quantity_produced),
     status: typeof row.status === "string" ? row.status.toLowerCase() : "planned",
+    status_reason: row.status_reason ?? null,
     production_cost: toNumber(row.production_cost),
     started_at: row.started_at ? new Date(row.started_at).toISOString() : null,
     completed_at: row.completed_at ? new Date(row.completed_at).toISOString() : null,
@@ -70,10 +71,11 @@ export async function PATCH(request, { params }) {
   }
 
   const desiredStatus = typeof payload?.status === "string" ? payload.status.toLowerCase() : null;
+  const statusReason = payload?.reason ?? payload?.status_reason ?? null;
   const quantityInput = payload?.quantity_produced ?? payload?.quantityProduced;
   const extrasInput = Array.isArray(payload?.extras) ? payload.extras : [];
   const shouldStart = payload?.started_at === true || payload?.start === true;
-  const allowedStatuses = new Set(["planned", "in_progress", "completed", "cancelled"]);
+  const allowedStatuses = new Set(["planned", "in_progress", "completed", "cancelled", "failed"]);
 
   try {
     const result = await sql.transaction(async (tx) => {
@@ -127,11 +129,31 @@ export async function PATCH(request, { params }) {
         }
       }
 
+      // Disallow changing the production order status once it has left 'planned'.
+      // This prevents transitions like 'in_progress' -> 'cancelled' or manual status edits
+      // after the order has already progressed beyond planning.
+      if (currentStatus !== "planned" && nextStatus !== currentStatus) {
+        return {
+          type: "error",
+          status: 400,
+          message: "Production order status cannot be changed once it has left 'planned'",
+        };
+      }
+
       if (nextStatus === "in_progress" && !startedAt) {
         startedAt = new Date();
       }
 
       const targetCompletion = nextStatus === "completed";
+
+      // Require a reason when cancelling or marking failed
+      if ((nextStatus === "cancelled" || nextStatus === "failed") && (!statusReason || String(statusReason).trim() === "")) {
+        return {
+          type: "error",
+          status: 400,
+          message: "Provide a reason when cancelling or marking a production order as failed",
+        };
+      }
 
       if (targetCompletion) {
         if (!startedAt) {
@@ -335,6 +357,26 @@ export async function PATCH(request, { params }) {
         }
       }
 
+      // If the order is being marked as failed, record the production cost as an expense
+      // so reports that subtract expenses from revenue will reflect the loss.
+      if (nextStatus === "failed") {
+        try {
+          const expenseDescription = `Failed production order #${orderId} - ${existing.product_name ?? "product"}`;
+          const expenseNotes = JSON.stringify({ production_order_id: orderId, product_id: existing.product_id });
+          const expenseDateIso = new Date().toISOString();
+          const expenseAmount = Number(productionCost ?? 0);
+          if (Number.isFinite(expenseAmount) && expenseAmount > 0) {
+            await tx`
+              INSERT INTO expenses (category, description, amount, expense_date, notes)
+              VALUES (${"production_failure"}, ${expenseDescription}, ${expenseAmount}, ${expenseDateIso}, ${expenseNotes})
+            `;
+          }
+        } catch (err) {
+          // Non-fatal: log and continue, but surface later if transaction rolls back
+          console.error("Failed to record production failure expense:", err);
+        }
+      }
+
       const updatedRows = await tx`
         UPDATE production_orders
         SET status = ${nextStatus},
@@ -342,6 +384,7 @@ export async function PATCH(request, { params }) {
             started_at = ${startedAt},
             completed_at = ${completedAt},
             production_cost = ${productionCost},
+            status_reason = ${statusReason},
             updated_at = NOW()
         WHERE id = ${orderId}
         RETURNING id

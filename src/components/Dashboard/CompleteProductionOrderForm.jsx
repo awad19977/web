@@ -89,7 +89,7 @@ export function CompleteProductionOrderForm({
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#1E1E1E] rounded-lg shadow-lg w-full max-w-2xl">
+      <div className="bg-white dark:bg-[#1E1E1E] rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
         <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Complete Production</h3>
           <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">Close</button>

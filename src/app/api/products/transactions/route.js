@@ -4,10 +4,20 @@ import { FEATURE_KEYS } from "@/constants/featureFlags";
 
 export async function GET(request) {
   try {
-    const { response } = await requireFeature(request, FEATURE_KEYS.REPORTS);
-    if (response) return response;
+      const { searchParams } = new URL(request.url);
+      const scope = searchParams.get("scope");
 
-    const { searchParams } = new URL(request.url);
+      // If the client explicitly requests production-scoped transactions,
+      // require the production-transactions feature flag. Otherwise require
+      // the general product-transactions feature flag.
+      if (scope === "production") {
+        const { response } = await requireFeature(request, FEATURE_KEYS.REPORTS_PRODUCTION_TRANSACTIONS);
+        if (response) return response;
+      } else {
+        const { response } = await requireFeature(request, FEATURE_KEYS.REPORTS_PRODUCT_TRANSACTIONS);
+        if (response) return response;
+      }
+
     const productId = searchParams.get("product_id") || searchParams.get("productId");
     const type = searchParams.get("type");
     const from = searchParams.get("from");

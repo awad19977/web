@@ -97,7 +97,7 @@ export function CreateProductionOrderForm({
   };
 
   return (
-    <div className="bg-white shadow-lg rounded-lg max-w-2xl w-full">
+    <div className="bg-white shadow-lg rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
       <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">Create Production Order</h3>
         <button

@@ -2,6 +2,9 @@ import { FEATURE_KEYS } from "@/constants/featureFlags";
 import { SummaryCard } from "./SummaryCard";
 import { StockTransactionsReport } from "./StockTransactionsReport";
 import { ProductTransactionsReport } from "./ProductTransactionsReport";
+import ProductionTransactionsReport from "./ProductionTransactionsReport";
+import ProfitLossReport from "./ProfitLossReport";
+import StockLevelsReport from "./StockLevelsReport";
 
 function StatBlock({ label, value, helpText }) {
   return (
@@ -14,7 +17,6 @@ function StatBlock({ label, value, helpText }) {
     </div>
   );
 }
-
 function formatCurrency(number) {
   if (typeof number !== "number" || Number.isNaN(number)) {
     return "$0";
@@ -22,7 +24,7 @@ function formatCurrency(number) {
   return `$${number.toLocaleString()}`;
 }
 
-export function ReportsTab({ reports, reportsLoading, features }) {
+export function ReportsTab({ reports, reportsLoading, features, start, end, setStart, setEnd }) {
   const hasReportsAccess = features?.[FEATURE_KEYS.REPORTS] !== false;
 
   if (!hasReportsAccess) {
@@ -76,6 +78,22 @@ export function ReportsTab({ reports, reportsLoading, features }) {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-end gap-3">
+        <label className="text-sm text-gray-600">Start:</label>
+        <input
+          type="date"
+          value={String(start ?? "")}
+          onChange={(e) => setStart(e.target.value)}
+          className="rounded-md border border-gray-200 px-2 py-1 text-sm"
+        />
+        <label className="text-sm text-gray-600">End:</label>
+        <input
+          type="date"
+          value={String(end ?? "")}
+          onChange={(e) => setEnd(e.target.value)}
+          className="rounded-md border border-gray-200 px-2 py-1 text-sm"
+        />
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <SummaryCard
           title="Revenue"
@@ -101,6 +119,18 @@ export function ReportsTab({ reports, reportsLoading, features }) {
           helpText="Calculated from revenue minus direct costs"
         />
       </div>
+
+      {features?.[FEATURE_KEYS.REPORTS_PROFIT_LOSS] !== false && (
+          <div>
+            <ProfitLossReport reports={reports} />
+          </div>
+      )}
+
+      {features?.[FEATURE_KEYS.REPORTS_STOCK_LEVELS] !== false && (
+        <div>
+          <StockLevelsReport />
+        </div>
+      )}
 
       <div className="bg-white dark:bg-[#1E1E1E] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
         <div className="flex items-center justify-between mb-4">
@@ -144,16 +174,29 @@ export function ReportsTab({ reports, reportsLoading, features }) {
       </div>
 
       <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Stock Transactions</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Filter and review stock movement per item.</p>
-          <StockTransactionsReport />
-        </div>
-        <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Product Transactions</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Track increases from production and decreases from sales.</p>
-          <ProductTransactionsReport />
-        </div>
+        {features?.[FEATURE_KEYS.REPORTS_STOCK_TRANSACTIONS] !== false && (
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Stock Transactions</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Filter and review stock movement per item.</p>
+            <StockTransactionsReport start={start} end={end} />
+          </div>
+        )}
+
+        {features?.[FEATURE_KEYS.REPORTS_PRODUCT_TRANSACTIONS] !== false && (
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Product Transactions</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Track increases from production and decreases from sales.</p>
+            <ProductTransactionsReport start={start} end={end} />
+          </div>
+        )}
+
+        {features?.[FEATURE_KEYS.REPORTS_PRODUCTION_TRANSACTIONS] !== false && (
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Production Transactions</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">List production outputs and failures tied to production orders.</p>
+            <ProductionTransactionsReport start={start} end={end} />
+          </div>
+        )}
       </div>
     </div>
   );

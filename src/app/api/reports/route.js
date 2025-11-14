@@ -9,11 +9,40 @@ export async function GET(request) {
     if (response) return response;
 
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get("period") || "30"; // days
+    // Accept explicit start/end dates (ISO YYYY-MM-DD) or default to last 30 days
+    const startParam = searchParams.get("start");
+    const endParam = searchParams.get("end");
 
-    // Calculate date range
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - parseInt(period));
+    let startDate;
+    let endDate;
+    if (startParam) {
+      startDate = new Date(startParam);
+    }
+    if (endParam) {
+      endDate = new Date(endParam);
+    }
+
+    // Default to last 30 days if not provided
+    if (!startDate && !endDate) {
+      endDate = new Date();
+      startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+    }
+
+    // If only start provided, set end to now. If only end provided, set start to 30 days before end.
+    if (startDate && !endDate) {
+      endDate = new Date();
+    }
+    if (!startDate && endDate) {
+      startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - 30);
+    }
+
+    // Normalize to ISO range (inclusive end)
+    const startIso = startDate.toISOString();
+    const endIso = new Date(endDate.getTime());
+    endIso.setHours(23, 59, 59, 999);
+
 
     // Get sales data
     const salesData = await sql`
@@ -23,7 +52,7 @@ export async function GET(request) {
         SUM(quantity) as units_sold,
         COUNT(*) as transactions
       FROM sales 
-      WHERE sale_date >= ${startDate.toISOString()}
+      WHERE sale_date >= ${startIso} AND sale_date <= ${endIso.toISOString()}
       GROUP BY DATE(sale_date)
       ORDER BY date DESC
     `;
@@ -36,7 +65,7 @@ export async function GET(request) {
         category,
         COUNT(*) as expense_count
       FROM expenses 
-      WHERE expense_date >= ${startDate.toISOString()}
+      WHERE expense_date >= ${startIso} AND expense_date <= ${endIso.toISOString()}
       GROUP BY DATE(expense_date), category
       ORDER BY date DESC
     `;
@@ -48,7 +77,7 @@ export async function GET(request) {
         SUM(total_cost) as total_purchases,
         COUNT(*) as purchase_count
       FROM stock_purchases 
-      WHERE purchase_date >= ${startDate.toISOString()}
+      WHERE purchase_date >= ${startIso} AND purchase_date <= ${endIso.toISOString()}
       GROUP BY DATE(purchase_date)
       ORDER BY date DESC
     `;
@@ -90,7 +119,9 @@ export async function GET(request) {
     `;
 
     return Response.json({
-      period: parseInt(period),
+      period: null,
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
       summary: {
         totalRevenue,
         totalExpenses,

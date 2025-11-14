@@ -159,7 +159,7 @@ export function ManageRecipeForm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-3xl rounded-lg bg-white p-6 shadow-xl dark:bg-[#1E1E1E]">
+      <div className="w-full max-w-3xl rounded-lg bg-white p-6 shadow-xl dark:bg-[#1E1E1E] max-h-[80vh] overflow-y-auto">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">

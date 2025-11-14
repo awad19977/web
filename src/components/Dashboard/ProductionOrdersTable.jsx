@@ -48,6 +48,8 @@ export function ProductionOrdersTable({
   onRetry,
   onComplete,
   completingOrderId = null,
+  onCancel,
+  onFail,
 }) {
   if (loading) {
     return (
@@ -161,22 +163,42 @@ export function ProductionOrdersTable({
                 <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
                   {status === "completed" ? (
                     <span className="text-xs font-medium text-green-700">Completed</span>
+                  ) : status === "planned" ? (
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onComplete?.(order)}
+                        className="inline-flex items-center rounded-md border border-blue-200 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={Boolean(completingOrderId) && completingOrderId !== order.id}
+                      >
+                        {completingOrderId === order.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Updating…
+                          </>
+                        ) : (
+                          "Mark completed"
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onCancel?.(order)}
+                        className="inline-flex items-center rounded-md border border-gray-200 px-3 py-1 text-sm font-medium text-rose-600 hover:bg-rose-50"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onFail?.(order)}
+                        className="inline-flex items-center rounded-md border border-gray-200 px-3 py-1 text-sm font-medium text-rose-800 bg-rose-50 hover:bg-rose-100"
+                      >
+                        Mark failed
+                      </button>
+                    </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => onComplete?.(order)}
-                      className="inline-flex items-center rounded-md border border-blue-200 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={Boolean(completingOrderId) && completingOrderId !== order.id}
-                    >
-                      {completingOrderId === order.id ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Updating…
-                        </>
-                      ) : (
-                        "Mark completed"
-                      )}
-                    </button>
+                    <span className="text-sm font-medium text-gray-600 capitalize">{status.replace("_", " ")}</span>
                   )}
                 </td>
               </tr>
