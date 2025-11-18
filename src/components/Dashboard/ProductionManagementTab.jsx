@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Factory, Loader2, Plus } from "lucide-react";
+import { useI18n } from '@/i18n';
 import { useProductionManagement } from "@/hooks/useProductionManagement";
 import useUser from "@/utils/useUser";
 import { FEATURE_KEYS } from "@/constants/featureFlags";
@@ -8,11 +9,11 @@ import { CreateProductionOrderForm } from "./CreateProductionOrderForm";
 import { ProductionOrdersTable } from "./ProductionOrdersTable";
 import { CompleteProductionOrderForm } from "./CompleteProductionOrderForm";
 
-const parseCompletedQuantity = (initialValue) => {
+const parseCompletedQuantity = (initialValue, promptMessage) => {
   if (typeof window === "undefined") return null;
 
   const promptValue = window.prompt(
-    "Enter the quantity produced for this order",
+    promptMessage,
     initialValue !== undefined && initialValue !== null ? String(initialValue) : ""
   );
 
@@ -30,10 +31,25 @@ const getErrorMessage = (error) => {
   if (!error) return null;
   if (typeof error === "string") return error;
   if (error?.message) return error.message;
-  return "Something went wrong";
+  return null;
 };
 
 export function ProductionManagementTab() {
+  const { t } = useI18n();
+  const L = useCallback(
+    (key, fallback) => {
+      try {
+        const value = t(key);
+        if (!value || value === key) {
+          return fallback;
+        }
+        return value;
+      } catch (err) {
+        return fallback;
+      }
+    },
+    [t]
+  );
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [formError, setFormError] = useState(null);
@@ -78,7 +94,7 @@ export function ProductionManagementTab() {
   const handleCreateOrder = useCallback(
     (payload) => {
       if (!payload?.product_id || !payload?.quantity_to_produce) {
-        setFormError("Select a product and quantity to produce");
+        setFormError(t('production.select_product_and_quantity'));
         return;
       }
 
@@ -86,7 +102,7 @@ export function ProductionManagementTab() {
         onSuccess: (order) => {
           setFeedback({
             type: "success",
-            message: `Created production order for ${order?.product_name ?? "product"}.`,
+            message: t('production.created', { name: order?.product_name ?? t('production.product_generic') }),
           });
           setShowCreateForm(false);
         },
@@ -101,7 +117,7 @@ export function ProductionManagementTab() {
   const handleCompleteOrder = useCallback((order) => {
     if (!order?.id) return;
     if ((order?.status ?? 'planned') !== 'planned') {
-      setFeedback({ type: 'error', message: 'Cannot change an order once it has progressed beyond planned.' });
+      setFeedback({ type: 'error', message: t('production.cannot_change_order') });
       return;
     }
     setCompletingOrder(order);
@@ -114,7 +130,7 @@ export function ProductionManagementTab() {
   const handleCancelOrder = useCallback((order) => {
     if (!order?.id) return;
     if ((order?.status ?? 'planned') !== 'planned') {
-      setFeedback({ type: 'error', message: 'Cannot change an order once it has progressed beyond planned.' });
+      setFeedback({ type: 'error', message: t('production.cannot_change_order') });
       return;
     }
     setActioningOrder(order);
@@ -125,7 +141,7 @@ export function ProductionManagementTab() {
   const handleFailOrder = useCallback((order) => {
     if (!order?.id) return;
     if ((order?.status ?? 'planned') !== 'planned') {
-      setFeedback({ type: 'error', message: 'Cannot change an order once it has progressed beyond planned.' });
+      setFeedback({ type: 'error', message: t('production.cannot_change_order') });
       return;
     }
     setActioningOrder(order);
@@ -137,7 +153,7 @@ export function ProductionManagementTab() {
     if (!actioningOrder?.id || !actionType) return;
     const status = actionType === "cancel" ? "cancelled" : "failed";
     if (!actionReason || String(actionReason).trim() === "") {
-      setFeedback({ type: "error", message: "Reason is required" });
+      setFeedback({ type: "error", message: t('production.reason_required') });
       return;
     }
     setCompletingOrderId(actioningOrder.id);
@@ -145,7 +161,7 @@ export function ProductionManagementTab() {
       { orderId: actioningOrder.id, status, reason: actionReason.trim() },
       {
         onSuccess: () => {
-          setFeedback({ type: "success", message: `${actioningOrder?.product_name ?? 'Order'} marked as ${status}.` });
+          setFeedback({ type: "success", message: t('production.marked_status', { name: actioningOrder?.product_name ?? t('production.order_generic'), status }) });
           setActioningOrder(null);
           setActionType(null);
           setActionReason("");
@@ -174,7 +190,7 @@ export function ProductionManagementTab() {
           onSuccess: () => {
             setFeedback({
               type: "success",
-              message: `Marked ${completingOrder?.product_name ?? "Order"} as completed.`,
+              message: t('production.completed', { name: completingOrder?.product_name ?? t('production.order_generic') }),
             });
             setCompletingOrder(null);
             setCompletingOrderId(null);
@@ -214,11 +230,9 @@ export function ProductionManagementTab() {
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900">
             <Factory className="h-5 w-5 text-blue-600" />
-            Production orders
+            {t('production.title')}
           </h2>
-          <p className="text-sm text-gray-500">
-            Plan and track batches using product recipes to ensure stock stays accurate.
-          </p>
+          <p className="text-sm text-gray-500">{t('production.description')}</p>
         </div>
         <button
           type="button"
@@ -231,7 +245,7 @@ export function ProductionManagementTab() {
           ) : (
             <Plus className="h-4 w-4" />
           )}
-          New production order
+          {t('production.new_order')}
         </button>
       </div>
 
@@ -239,10 +253,8 @@ export function ProductionManagementTab() {
         <div className="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-700">
           <AlertTriangle className="mt-0.5 h-5 w-5" />
           <div>
-            <h3 className="font-semibold">Unable to load products</h3>
-            <p className="text-sm opacity-90">
-              {getErrorMessage(productsError) || "Verify the product catalog before creating orders."}
-            </p>
+            <h3 className="font-semibold">{t('production.unable_load_products')}</h3>
+            <p className="text-sm opacity-90">{getErrorMessage(productsError) || t('production.verify_product_catalog')}</p>
           </div>
         </div>
       ) : null}
@@ -257,7 +269,7 @@ export function ProductionManagementTab() {
               onClick={() => setFeedback(null)}
               className="mt-1 text-xs font-semibold uppercase tracking-wide hover:underline"
             >
-              Dismiss
+              {t('dismiss')}
             </button>
           </div>
         </div>
@@ -302,13 +314,13 @@ export function ProductionManagementTab() {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30">
           <div className="bg-white dark:bg-[#1E1E1E] rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              {actionType === 'cancel' ? 'Cancel Production Order' : 'Mark Production Order Failed'}
+              {actionType === 'cancel' ? t('production.action_title.cancel') : t('production.action_title.fail')}
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Provide a reason (required).</p>
-            <textarea value={actionReason} onChange={(e) => setActionReason(e.target.value)} rows={4} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('production.action_reason_required')}</p>
+            <textarea value={actionReason} onChange={(e) => setActionReason(e.target.value)} rows={4} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" placeholder={L('production.action_reason_placeholder', 'Provide a reason for this action...')} />
             <div className="flex items-center justify-end gap-3 mt-4">
-              <button onClick={() => { setActioningOrder(null); setActionType(null); setActionReason(''); }} className="px-3 py-2 border rounded-md">Cancel</button>
-              <button onClick={handleSubmitAction} className="px-3 py-2 bg-rose-600 text-white rounded-md">Confirm</button>
+              <button onClick={() => { setActioningOrder(null); setActionType(null); setActionReason(''); }} className="px-3 py-2 border rounded-md">{t('cancel')}</button>
+              <button onClick={handleSubmitAction} className="px-3 py-2 bg-rose-600 text-white rounded-md">{t('production.action_confirm')}</button>
             </div>
           </div>
         </div>

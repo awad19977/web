@@ -1,12 +1,26 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { AlertTriangle, CheckCircle2, Plus } from "lucide-react";
 import { useProductManagement } from "@/hooks/useProductManagement";
 import { useStockCatalog } from "@/hooks/useStockCatalog";
 import { ProductTable } from "./ProductTable";
 import { AddProductForm } from "./AddProductForm";
 import { ManageRecipeForm } from "./ManageRecipeForm";
+import { useI18n } from '@/i18n';
 
 export function ProductsManagementTab() {
+  const { t } = useI18n();
+  const L = useCallback(
+    (key, fallback, params) => {
+      try {
+        const value = t(key, params);
+        if (!value || value === key) return fallback;
+        return value;
+      } catch (err) {
+        return fallback;
+      }
+    },
+    [t]
+  );
   const [showAddForm, setShowAddForm] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [formError, setFormError] = useState(null);
@@ -35,7 +49,7 @@ export function ProductsManagementTab() {
   } = useStockCatalog();
 
   const stockErrorMessage = stockLoadFailed
-    ? stockLoadError?.message || "Unable to load stock catalog."
+    ? stockLoadError?.message || L('products.stock_load_error', 'Unable to load stock catalog.')
     : null;
 
   const handleAddProduct = (payload) => {
@@ -46,18 +60,18 @@ export function ProductsManagementTab() {
         if (product?.name) {
           const initialStock = Number(product.current_stock ?? 0);
           const stockMessage = initialStock > 0
-            ? ` (starting stock: ${initialStock.toLocaleString()})`
+            ? ` (${L('products.starting_stock', '(starting stock: {count})', { count: initialStock.toLocaleString() })})`
             : "";
           setFeedback({
             type: "success",
-            message: `Created ${product.name}${stockMessage}.`,
+            message: L('products.created_with_stock', 'Created {name}{stockMessage}.', { name: product.name, stockMessage }),
           });
         } else {
-          setFeedback({ type: "success", message: "Product created." });
+          setFeedback({ type: "success", message: L('products.created_simple', 'Product created.') });
         }
       },
-      onError: (mutationError) => {
-        setFormError(mutationError?.message || "Unable to create product right now.");
+        onError: (mutationError) => {
+        setFormError(mutationError?.message || L('products.create_failed', 'Unable to create product right now.'));
       },
     });
   };
@@ -95,13 +109,13 @@ export function ProductsManagementTab() {
           setFeedback({
             type: "success",
             message: cleared
-              ? `Cleared ${targetProduct.name}'s recipe.`
-              : `Updated ${targetProduct.name}'s recipe.`,
+              ? L('products.recipe_cleared', "Cleared {name}'s recipe.", { name: targetProduct.name })
+              : L('products.recipe_updated', "Updated {name}'s recipe.", { name: targetProduct.name }),
           });
           setActiveRecipeProduct(null);
         },
         onError: (mutationError) => {
-          setRecipeError(mutationError?.message || "Unable to update recipe right now.");
+          setRecipeError(mutationError?.message || L('products.update_recipe_failed', 'Unable to update recipe right now.'));
         },
       },
     );
@@ -116,9 +130,9 @@ export function ProductsManagementTab() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Products</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{L('products.title', 'Products')}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Manage your catalog and keep product recipes aligned with inventory.
+            {L('products.description', 'Manage your catalog and keep product recipes aligned with inventory.')}
           </p>
         </div>
         <button
@@ -126,7 +140,7 @@ export function ProductsManagementTab() {
           className="flex items-center gap-2 rounded-lg bg-[#18B84E] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#16A249] dark:bg-[#16A249] dark:hover:bg-[#14D45D]"
         >
           <Plus className="h-4 w-4" />
-          Add Product
+          {L('products.add_product', 'Add Product')}
         </button>
       </div>
 
@@ -140,7 +154,7 @@ export function ProductsManagementTab() {
               onClick={() => setFeedback(null)}
               className="mt-1 text-xs font-semibold uppercase tracking-wide text-emerald-700 hover:underline dark:text-emerald-200"
             >
-              Dismiss
+              {L('dismiss', 'Dismiss')}
             </button>
           </div>
         </div>
@@ -150,9 +164,9 @@ export function ProductsManagementTab() {
         <div className="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
           <AlertTriangle className="mt-0.5 h-5 w-5" />
           <div>
-            <h3 className="font-semibold">Unable to load products</h3>
+            <h3 className="font-semibold">{L('products.unable_load', 'Unable to load products')}</h3>
             <p className="text-sm opacity-90">
-              {error?.message || "Refresh the page or verify the /api/products endpoint."}
+              {error?.message || L('products.unable_load_message', 'Refresh the page or verify the /api/products endpoint.')}
             </p>
           </div>
         </div>
@@ -169,10 +183,10 @@ export function ProductsManagementTab() {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              No products defined yet
+              {L('products.no_products_title', 'No products defined yet')}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Create your first product to begin tracking the catalog and revenue.
+              {L('products.no_products_message', 'Create your first product to begin tracking the catalog and revenue.')}
             </p>
           </div>
           <button
@@ -181,7 +195,7 @@ export function ProductsManagementTab() {
             className="inline-flex items-center gap-2 rounded-lg bg-[#18B84E] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#16A249] dark:bg-[#16A249] dark:hover:bg-[#14D45D]"
           >
             <Plus className="h-4 w-4" />
-            Add a product
+            {L('products.add_product_verbose', 'Add a product')}
           </button>
         </div>
       )}

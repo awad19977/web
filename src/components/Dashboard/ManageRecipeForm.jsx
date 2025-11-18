@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { AlertCircle, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { useI18n } from '@/i18n';
 
 const currencyFormatter = new Intl.NumberFormat(undefined, {
   style: "currency",
@@ -52,6 +53,21 @@ export function ManageRecipeForm({
 }) {
   const [rows, setRows] = useState(buildInitialRows(product));
   const [validationError, setValidationError] = useState(null);
+  const { t } = useI18n();
+  const L = useCallback(
+    (key, fallback) => {
+      try {
+        const value = t(key);
+        if (!value || value === key) {
+          return fallback;
+        }
+        return value;
+      } catch (err) {
+        return fallback;
+      }
+    },
+    [t]
+  );
 
   useEffect(() => {
     setRows(buildInitialRows(product));
@@ -124,7 +140,7 @@ export function ManageRecipeForm({
       }
 
       if (!hasStock || !hasQuantity) {
-        setValidationError("Complete or remove partially filled recipe rows.");
+        setValidationError(L('recipe.validation_complete_rows', 'Complete or remove partially filled recipe rows.'));
         return;
       }
 
@@ -132,17 +148,17 @@ export function ManageRecipeForm({
       const quantity = Number(row.quantity);
 
       if (!Number.isInteger(stockId) || stockId <= 0) {
-        setValidationError("Select a valid stock item for each ingredient.");
+        setValidationError(L('recipe.validation_select_stock', 'Select a valid stock item for each ingredient.'));
         return;
       }
 
       if (!Number.isFinite(quantity) || quantity <= 0) {
-        setValidationError("Ingredient quantities must be positive numbers.");
+        setValidationError(L('recipe.validation_positive_quantity', 'Ingredient quantities must be positive numbers.'));
         return;
       }
 
       if (localSeen.has(stockId)) {
-        setValidationError("Each stock item can only appear once in a recipe.");
+        setValidationError(L('recipe.validation_unique_stock', 'Each stock item can only appear once in a recipe.'));
         return;
       }
 
@@ -163,18 +179,18 @@ export function ManageRecipeForm({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Manage Recipe
+              {t('recipe.title')}
             </h3>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              Define the stock ingredients required to produce <span className="font-medium text-gray-900 dark:text-gray-100">{product?.name}</span>.
+              {t('recipe.description', { name: product?.name })}
             </p>
           </div>
-          <button
+            <button
             type="button"
             onClick={onClose}
             className="rounded-md border border-gray-300 px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
           >
-            Close
+            {t('production.form.close')}
           </button>
         </div>
 
@@ -189,7 +205,7 @@ export function ManageRecipeForm({
                   onClick={() => onRefreshStock()}
                   className="mt-1 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-rose-700 hover:underline dark:text-rose-200"
                 >
-                  <RefreshCw className="h-3 w-3" /> Retry
+                  <RefreshCw className="h-3 w-3" /> {t('recipe.retry')}
                 </button>
               ) : null}
             </div>
@@ -211,7 +227,7 @@ export function ManageRecipeForm({
                   <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,160px)_auto]">
                     <div>
                       <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Ingredient
+                        {t('recipe.ingredient_label')}
                       </label>
                       <select
                         value={row.stockId}
@@ -219,7 +235,7 @@ export function ManageRecipeForm({
                         className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#18B84E] focus:ring-2 focus:ring-[#18B84E] disabled:opacity-60 dark:border-gray-600 dark:bg-[#1E1E1E] dark:text-white dark:focus:border-[#16A249] dark:focus:ring-[#16A249]"
                         disabled={stockLoading}
                       >
-                        <option value="">{stockLoading ? "Loading stock..." : "Select stock item"}</option>
+                        <option value="">{stockLoading ? t('recipe.loading_stock') : t('recipe.select_stock')}</option>
                         {Array.isArray(stock)
                           ? stock.map((item) => (
                               <option
@@ -233,12 +249,12 @@ export function ManageRecipeForm({
                           : null}
                       </select>
                       {helperText ? (
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{helperText}</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('recipe.helper', { current: quantityFormatter.format(Number(selectedStock.current_quantity ?? 0)), cost: currencyFormatter.format(Number(selectedStock.unit_cost ?? 0)), unit: selectedStock.unit ?? t('recipe.unit') })}</p>
                       ) : null}
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Quantity Needed
+                        {t('recipe.quantity_needed')}
                       </label>
                       <input
                         type="number"
@@ -256,7 +272,7 @@ export function ManageRecipeForm({
                         className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                       >
                         <Trash2 className="h-4 w-4" />
-                        Remove
+                        {t('recipe.remove')}
                       </button>
                     </div>
                   </div>
@@ -266,23 +282,23 @@ export function ManageRecipeForm({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <button
+              <button
               type="button"
               onClick={handleAddRow}
               disabled={disableAddButton}
               className="inline-flex items-center gap-2 rounded-md border border-dashed border-gray-400 px-4 py-2 text-sm font-medium text-gray-700 hover:border-[#18B84E] hover:text-[#18B84E] disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:border-[#16A249] dark:hover:text-[#16A249]"
             >
               <Plus className="h-4 w-4" />
-              Add ingredient
+              {t('recipe.add_ingredient')}
             </button>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Estimated batch cost: <span className="font-semibold text-gray-900 dark:text-gray-100">{currencyFormatter.format(totalCost)}</span>
+              {t('recipe.estimated_batch_cost')}: <span className="font-semibold text-gray-900 dark:text-gray-100">{currencyFormatter.format(totalCost)}</span>
             </div>
           </div>
 
           {stockUnavailable ? (
             <div className="rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800 dark:border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-200">
-              No stock items are available. Add inventory items first or save to clear the recipe.
+              {t('recipe.no_stock_available')}
             </div>
           ) : null}
 
@@ -299,7 +315,7 @@ export function ManageRecipeForm({
               onClick={onClose}
               className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
-              Cancel
+              {t('production.form.cancel')}
             </button>
             <button
               type="submit"
@@ -309,10 +325,10 @@ export function ManageRecipeForm({
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Saving...
+                  {t('recipe.saving')}
                 </>
               ) : (
-                "Save recipe"
+                t('recipe.save')
               )}
             </button>
           </div>

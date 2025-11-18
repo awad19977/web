@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
+import { useI18n } from '@/i18n';
 
 const isPositive = (v) => Number.isFinite(Number(v)) && Number(v) > 0;
 
@@ -22,6 +23,7 @@ export function CompleteProductionOrderForm({
   const [stocks, setStocks] = useState([]);
   const [extras, setExtras] = useState([]);
   const [error, setError] = useState(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     let cancelled = false;
@@ -53,7 +55,7 @@ export function CompleteProductionOrderForm({
     e.preventDefault();
     setError(null);
     if (!isPositive(quantity)) {
-      setError("Enter a valid produced quantity");
+      setError(t('production.complete.validation.quantity'));
       return;
     }
     let sanitized = [];
@@ -71,14 +73,14 @@ export function CompleteProductionOrderForm({
         const stk = stocks.find((s) => Number(s.id) === Number(stockId));
         if (!stk) continue;
         const absoluteLimit = Number(stk.limit ?? 0);
-        if (Number.isFinite(absoluteLimit) && absoluteLimit > 0) {
+          if (Number.isFinite(absoluteLimit) && absoluteLimit > 0) {
           if (totalQty - absoluteLimit > 1e-9) {
-            setError(`Extra quantity for ${stk.name} exceeds allowed limit (${absoluteLimit} ${stk.unit || ''}).`);
+            setError(t('production.complete.error_extra_exceeds', { name: stk.name, limit: absoluteLimit, unit: stk.unit || '' }));
             return;
           }
         }
         if ((Number(stk.available ?? 0) + 1e-9) < totalQty) {
-          setError(`Not enough ${stk.name} available for extras.`);
+          setError(t('production.complete.error_not_enough', { name: stk.name }));
           return;
         }
       }
@@ -91,12 +93,12 @@ export function CompleteProductionOrderForm({
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="bg-white dark:bg-[#1E1E1E] rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
         <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Complete Production</h3>
-          <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">Close</button>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('production.complete.title')}</h3>
+          <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">{t('production.complete.close')}</button>
         </div>
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Quantity produced</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">{t('production.complete.quantity_label')}</label>
             <input
               type="number"
               min="0"
@@ -111,13 +113,13 @@ export function CompleteProductionOrderForm({
           {allowExtras && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Extra ingredients (optional)</h4>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{t('production.complete.extras_title')}</h4>
                 <button type="button" onClick={addExtra} className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700">
-                  <Plus className="h-4 w-4" /> Add item
+                  <Plus className="h-4 w-4" /> {t('production.complete.add_item')}
                 </button>
               </div>
               {extras.length === 0 ? (
-                <p className="text-xs text-gray-500 dark:text-gray-400">No extras added.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('production.complete.no_extras')}</p>
               ) : (
                 <div className="space-y-2">
                   {extras.map((row, idx) => {
@@ -131,7 +133,7 @@ export function CompleteProductionOrderForm({
                             disabled={isSubmitting}
                             className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121212] px-2 py-2 text-sm"
                           >
-                            <option value="">Select stock…</option>
+                            <option value="">{t('production.complete.select_stock')}</option>
                             {stocks.map((s) => (
                               <option key={s.id} value={s.id}>
                                 {s.name} {s.unit ? `(${s.unit})` : ""}
@@ -144,7 +146,7 @@ export function CompleteProductionOrderForm({
                             type="number"
                             min="0"
                             step="0.01"
-                            placeholder="Quantity"
+                            placeholder={t('production.complete.quantity_placeholder')}
                             value={row.quantity}
                             onChange={(e) => updateExtra(idx, "quantity", e.target.value)}
                             disabled={isSubmitting}
@@ -152,7 +154,7 @@ export function CompleteProductionOrderForm({
                           />
                           {sel ? (
                             <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                              Avail: {sel.available} • Limit: {sel.limit || "Unlimited"}
+                              {t('production.complete.avail_limit', { avail: sel.available, limit: sel.limit || t('production.complete.unlimited') })}
                             </p>
                           ) : null}
                         </div>
@@ -177,9 +179,9 @@ export function CompleteProductionOrderForm({
           )}
 
           <div className="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-800 pt-3">
-            <button type="button" onClick={onClose} className="rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm text-gray-700 dark:text-gray-200">Cancel</button>
+            <button type="button" onClick={onClose} className="rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm text-gray-700 dark:text-gray-200">{t('production.form.cancel')}</button>
             <button type="submit" disabled={isSubmitting} className="inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
-              {isSubmitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Completing…</>) : "Complete order"}
+              {isSubmitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('production.complete.completing')}</>) : t('production.complete.complete')}
             </button>
           </div>
         </form>

@@ -1,7 +1,11 @@
+import { useI18n } from '@/i18n';
+
 export function DashboardTabs({ activeTab, onTabChange, tabs }) {
   if (!tabs?.length) {
     return null;
   }
+
+  const { t } = useI18n();
 
   return (
     <div className="mb-6">
@@ -17,7 +21,7 @@ export function DashboardTabs({ activeTab, onTabChange, tabs }) {
                   : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
               }`}
             >
-              {tab.label}
+              {tab.labelKey ? t(tab.labelKey) : tab.label}
             </button>
           ))}
         </nav>

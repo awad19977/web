@@ -1,3 +1,5 @@
+import { useI18n } from '@/i18n';
+
 export function StockTable({
   stock,
   onPurchaseClick,
@@ -8,26 +10,27 @@ export function StockTable({
   canDelete,
   deletingStockId,
 }) {
+  const { t } = useI18n();
   return (
     <div className="bg-white dark:bg-[#1E1E1E] rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-[#262626]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Item
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {t('stock_table.item')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Current Stock
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {t('stock_table.current_stock')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Unit Cost
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {t('stock_table.unit_cost')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Supplier
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {t('stock_table.supplier')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Actions
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {t('stock_table.actions')}
               </th>
             </tr>
           </thead>
@@ -75,7 +78,7 @@ export function StockTable({
                         onClick={() => onPurchaseClick(item)}
                         className="text-[#18B84E] dark:text-[#16A249] hover:text-[#16A249] dark:hover:text-[#14D45D] font-medium"
                       >
-                        Purchase
+                          {t('stock_table.purchase')}
                       </button>
                     )}
                     {canEdit && (
@@ -83,7 +86,7 @@ export function StockTable({
                         onClick={() => onEditClick(item)}
                         className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                       >
-                        Edit
+                          {t('stock_table.edit')}
                       </button>
                     )}
                     {canDelete && (
@@ -92,13 +95,13 @@ export function StockTable({
                         disabled={deletingStockId === item.id}
                         className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium disabled:opacity-50"
                       >
-                        {deletingStockId === item.id ? "Deleting..." : "Delete"}
+                          {deletingStockId === item.id ? t('stock_table.deleting') : t('stock_table.delete')}
                       </button>
                     )}
                     {!canPurchase && !canEdit && !canDelete && (
-                      <span className="text-sm text-gray-400 dark:text-gray-500">
-                        View only
-                      </span>
+                        <span className="text-sm text-gray-400 dark:text-gray-500">
+                          {t('stock_table.view_only')}
+                        </span>
                     )}
                   </div>
                 </td>

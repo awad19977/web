@@ -1,3 +1,5 @@
+import { useI18n } from "@/i18n";
+import { useCallback } from "react";
 export function SalesTable({ sales, loading, error }) {
   if (error) {
     return (
@@ -6,7 +8,21 @@ export function SalesTable({ sales, loading, error }) {
       </div>
     );
   }
-
+const { t } = useI18n();
+  const L = useCallback(
+    (key, fallback) => {
+      try {
+        const value = t(key);
+        if (!value || value === key) {
+          return fallback;
+        }
+        return value;
+      } catch (err) {
+        return fallback;
+      }
+    },
+    [t]
+  );
   return (
     <div className="bg-white dark:bg-[#1E1E1E] rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
       <div className="overflow-x-auto">
@@ -14,25 +30,25 @@ export function SalesTable({ sales, loading, error }) {
           <thead className="bg-gray-50 dark:bg-[#262626]">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Product
+                {L('sales_management.header_Product', 'Product')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Quantity
+                {L('sales_management.header_quantity', 'Quantity')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Damaged
+                {L('sales_management.header_damaged', 'Damaged')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Unit Price
+                {L('sales_management.header_unit_price', 'Unit Price')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Total
+                {L('sales_management.header_total_price', 'Total Price')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Customer
+                {L('sales_management.header_customer', 'Customer')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Date
+                {L('sales_management.header_date', 'Date')}
               </th>
             </tr>
           </thead>
@@ -43,7 +59,7 @@ export function SalesTable({ sales, loading, error }) {
                   colSpan={6}
                   className="px-6 py-8 text-center text-gray-500 dark:text-gray-400"
                 >
-                  Loading sales...
+                  {L('sales_management.loading_sales', 'Loading sales...')}
                 </td>
               </tr>
             ) : sales.length === 0 ? (
@@ -52,7 +68,8 @@ export function SalesTable({ sales, loading, error }) {
                   colSpan={6}
                   className="px-6 py-12 text-center text-gray-500 dark:text-gray-400"
                 >
-                  No sales recorded yet.
+                  {L('sales_management.no_sales', 'No sales recorded yet.')}
+                  {L('sales_management.no_sales_message', 'Record your first sale to see it listed here.')}
                 </td>
               </tr>
             ) : (
@@ -71,7 +88,7 @@ export function SalesTable({ sales, loading, error }) {
                         {sale.product_name}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {sale.notes || "No notes"}
+                        {sale.notes || L('sales_management.notes', 'No notes')}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-900 dark:text-white">
@@ -100,7 +117,7 @@ export function SalesTable({ sales, loading, error }) {
                       })}
                     </td>
                     <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                      {sale.customer_name || "Walk-in"}
+                      {sale.customer_name || L('sales_management.customer', 'Walk-in')}
                     </td>
                     <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                       {sale.sale_date

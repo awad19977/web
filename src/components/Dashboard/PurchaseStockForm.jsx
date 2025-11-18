@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useI18n } from '@/i18n';
 import {
   convertPriceFromBase,
   convertPriceToBase,
@@ -112,7 +113,21 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
     );
   }, [baseUnit, normalizedUnits, selectedUnitId]);
 
-  const baseUnitLabel = baseUnit?.name ?? stock.unit ?? "base units";
+  const { t } = useI18n();
+  const L = useCallback(
+    (key, fallback) => {
+      try {
+        const value = t(key);
+        if (!value || value === key) return fallback;
+        return value;
+      } catch (err) {
+        return fallback;
+      }
+    },
+    [t]
+  );
+
+  const baseUnitLabel = baseUnit?.name ?? stock.unit ?? L('purchase.base_unit_label', 'base units');
   const selectedUnitLabel = selectedUnit?.name ?? baseUnitLabel;
 
   const handleUnitChange = (rawValue) => {
@@ -167,12 +182,12 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-[#1E1E1E] rounded-lg p-6 w-full max-w-md mx-4">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-          Purchase {stock.name}
+          {t('purchase.title', { name: stock.name })}
         </h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Unit
+              {t('purchase.unit')}
             </label>
             <select
               value={selectedUnitId ?? ""}
@@ -183,19 +198,23 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
                 <option key={`${unit.id ?? "base"}`} value={unit.id ?? ""}>
                   {unit.name}
                   {unit.symbol ? ` (${unit.symbol})` : ""}
-                  {unit.is_base ? " (base)" : ""}
+                  {unit.is_base ? L('purchase.base_suffix', ' (base)') : ""}
                 </option>
               ))}
             </select>
             {selectedUnit && !selectedUnit.is_base && (
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                1 {selectedUnit.name} = {selectedUnit.conversion_factor} {baseUnitLabel}
+                {L('purchase.unit_conversion', '1 {unit} = {factor} {baseUnit}', {
+                  unit: selectedUnit.name,
+                  factor: selectedUnit.conversion_factor,
+                  baseUnit: baseUnitLabel,
+                })}
               </p>
             )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Quantity ({selectedUnit?.name ?? baseUnitLabel})
+              {t('purchase.quantity_label', { unit: selectedUnit?.name ?? baseUnitLabel })}
             </label>
             <input
               type="number"
@@ -208,7 +227,7 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Unit Cost ($ per {selectedUnitLabel})
+              {t('purchase.unit_cost_label', { unit: selectedUnitLabel })}
             </label>
             <input
               type="number"
@@ -221,7 +240,7 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Supplier
+              {t('purchase.supplier')}
             </label>
             <input
               type="text"
@@ -232,7 +251,7 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Notes
+              {t('purchase.notes')}
             </label>
             <textarea
               value={notes}
@@ -241,9 +260,9 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
               rows="2"
             />
           </div>
-          <div className="bg-gray-50 dark:bg-[#262626] p-3 rounded-md space-y-1">
+            <div className="bg-gray-50 dark:bg-[#262626] p-3 rounded-md space-y-1">
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Base Quantity:{" "}
+              {t('purchase.base_quantity')}: {" "}
               <span className="font-bold text-gray-900 dark:text-white">
                 {Number.isFinite(baseQuantity)
                   ? baseQuantity.toFixed(2)
@@ -251,15 +270,15 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
               </span>
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Cost per Base Unit: {" "}
+              {t('purchase.cost_per_base_unit')}: {" "}
               <span className="font-bold text-gray-900 dark:text-white">
-                ${Number.isFinite(baseUnitCost) ? baseUnitCost.toFixed(2) : "0.00"}
+                {L('purchase.currency_symbol', '$')}{Number.isFinite(baseUnitCost) ? baseUnitCost.toFixed(2) : "0.00"}
               </span>
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Total Cost:{" "}
+              {t('purchase.total_cost')}: {" "}
               <span className="font-bold text-gray-900 dark:text-white">
-                ${totalCost.toFixed(2)}
+                {L('purchase.currency_symbol', '$')}{totalCost.toFixed(2)}
               </span>
             </div>
           </div>
@@ -269,14 +288,14 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="flex-1 px-4 py-2 bg-[#18B84E] dark:bg-[#16A249] text-white rounded-md hover:bg-[#16A249] dark:hover:bg-[#14D45D] disabled:opacity-50"
             >
-              {loading ? "Purchasing..." : "Purchase"}
+              {loading ? t('purchase.purchasing') : t('purchase.purchase')}
             </button>
           </div>
         </form>

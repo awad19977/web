@@ -17,6 +17,7 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
+import { useI18n } from '@/i18n';
 
 const cardBaseClasses =
   "rounded-2xl border border-gray-200/70 dark:border-gray-800/80 bg-white dark:bg-[#121212] p-5 shadow-sm shadow-gray-200/50 dark:shadow-none transition hover:shadow-md";
@@ -37,6 +38,12 @@ function FeatureToggleButton({
   disabled,
   compact = false,
 }) {
+  const { t } = useI18n();
+  const featureKey = String(feature.key || '').replace(/[:.\-]/g, '_');
+  const labelKey = `features.${featureKey}`;
+  const descKey = `features.${featureKey}_desc`;
+  const localizedLabel = t(labelKey);
+  const localizedDescription = t(descKey);
   const activeStyles =
     "border-emerald-400/70 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/60 dark:bg-emerald-400/10 dark:text-emerald-200";
   const inactiveStyles =
@@ -65,18 +72,25 @@ function FeatureToggleButton({
     >
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          {feature.label}
+          {localizedLabel === labelKey ? feature.label : localizedLabel}
         </span>
-        <span className={`text-xs font-semibold uppercase tracking-wide ${statusClasses}`}>
-          {enabled ? "On" : "Off"}
-        </span>
+        <FeatureToggleState enabled={enabled} statusClasses={statusClasses} />
       </div>
-      {!compact && feature.description && (
+      {!compact && (localizedDescription === descKey ? feature.description : localizedDescription) && (
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-          {feature.description}
+          {localizedDescription === descKey ? feature.description : localizedDescription}
         </p>
       )}
     </button>
+  );
+}
+
+function FeatureToggleState({ enabled, statusClasses }) {
+  const { t } = useI18n();
+  return (
+    <span className={`text-xs font-semibold uppercase tracking-wide ${statusClasses}`}>
+      {enabled ? t('users.status_on') : t('users.status_off')}
+    </span>
   );
 }
 
@@ -136,39 +150,40 @@ function ModalShell({ title, description, onClose, children }) {
 }
 
 function UserFormModal({
-  mode,
-  user,
-  onClose,
-  onSubmit,
-  submitting,
-  currentUserId,
-}) {
-  const isEdit = mode === "edit";
-  const [name, setName] = useState(user?.name ?? "");
-  const [username, setUsername] = useState(user?.username ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
-  const [password, setPassword] = useState("");
-  const [features, setFeatures] = useState(() => ({
-    ...DEFAULT_FEATURE_FLAGS,
-    ...(user?.features ?? {}),
-  }));
-  const [error, setError] = useState("");
-
-  const enabledCount = useMemo(
-    () =>
-      FEATURE_LIST.reduce(
-        (count, feature) => (features?.[feature.key] ? count + 1 : count),
-        0,
-      ),
-    [features],
-  );
-
-  const handleToggleFeature = (featureKey, nextEnabled) => {
-    setFeatures((prev) => ({
-      ...prev,
-      [featureKey]: nextEnabled,
+    mode,
+    user,
+    onClose,
+    onSubmit,
+    submitting,
+    currentUserId,
+  }) {
+    const { t } = useI18n();
+    const isEdit = mode === "edit";
+    const [name, setName] = useState(user?.name ?? "");
+    const [username, setUsername] = useState(user?.username ?? "");
+    const [email, setEmail] = useState(user?.email ?? "");
+    const [password, setPassword] = useState("");
+    const [features, setFeatures] = useState(() => ({
+      ...DEFAULT_FEATURE_FLAGS,
+      ...(user?.features ?? {}),
     }));
-  };
+    const [error, setError] = useState("");
+
+    const enabledCount = useMemo(
+      () =>
+        FEATURE_LIST.reduce(
+          (count, feature) => (features?.[feature.key] ? count + 1 : count),
+          0,
+        ),
+      [features],
+    );
+
+    const handleToggleFeature = (featureKey, nextEnabled) => {
+      setFeatures((prev) => ({
+        ...prev,
+        [featureKey]: nextEnabled,
+      }));
+    };
 
   const isSelf = user?.id === currentUserId;
 
@@ -177,34 +192,32 @@ function UserFormModal({
     setError("");
 
     if (!name.trim()) {
-      setError("Name is required.");
+      setError(t('users.error.name_required'));
       return;
     }
 
     if (!username.trim()) {
-      setError("Username is required.");
+      setError(t('users.error.username_required'));
       return;
     }
 
     if (!USERNAME_REGEX.test(username.trim())) {
-      setError(
-        "Username must be at least 4 characters and only include letters, numbers, dots, dashes, or underscores.",
-      );
+      setError(t('users.error.username_format'));
       return;
     }
 
     if (!email.trim()) {
-      setError("Email is required.");
+      setError(t('users.error.email_required'));
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError("Enter a valid email address.");
+      setError(t('users.error.invalid_email'));
       return;
     }
 
     if (!isEdit && password.trim().length < 8) {
-      setError("Password must be at least 8 characters long.");
+      setError(t('users.error.password_length'));
       return;
     }
 
@@ -217,60 +230,56 @@ function UserFormModal({
         features,
       });
     } catch (submitError) {
-      setError(submitError?.message ?? "Unable to save user");
+      setError(submitError?.message ?? t('users.error.unable_save'));
     }
   };
 
   return (
     <ModalShell
-      title={isEdit ? "Edit User" : "Invite New User"}
-      description={
-        isEdit
-          ? "Update profile details and fine-tune access for this account."
-          : "Create a new account and assign the correct feature access from the start."
-      }
+      title={isEdit ? t('users.edit_user') : t('users.invite_new_user')}
+      description={isEdit ? t('users.edit_user_desc') : t('users.invite_new_user_desc')}
       onClose={onClose}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Name
+              {t('users.name')}
             </span>
             <input
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-gray-700 dark:bg-[#161616] dark:text-gray-100"
-              placeholder="Ada Lovelace"
+              placeholder={t('users.placeholder.name_example')}
               autoFocus
             />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Username
+              {t('users.username')}
             </span>
             <input
               type="text"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-gray-700 dark:bg-[#161616] dark:text-gray-100"
-              placeholder="ada.lovelace"
+              placeholder={t('users.placeholder.username_example')}
             />
             <span className="text-xs text-gray-500 dark:text-gray-400">
-              Letters, numbers, dots, dashes, and underscores; at least 4 characters.
+              {t('users.username_help')}
             </span>
           </label>
           <label className="flex flex-col gap-1 sm:col-span-2">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Email
+              {t('users.email')}
             </span>
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-gray-700 dark:bg-[#161616] dark:text-gray-100"
-              placeholder="team@example.com"
+              placeholder={t('users.placeholder.email_example')}
             />
           </label>
         </div>
@@ -278,35 +287,35 @@ function UserFormModal({
         {!isEdit && (
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Temporary Password
+              {t('users.temp_password')}
             </span>
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-gray-700 dark:bg-[#161616] dark:text-gray-100"
-              placeholder="At least 8 characters"
+              placeholder={t('users.placeholder.password_example')}
             />
             <span className="text-xs text-gray-500 dark:text-gray-400">
-              Passwords can be changed later by the user; share this temporary value securely.
+              {t('users.password_help')}
             </span>
           </label>
         )}
 
         <div className="rounded-xl border border-gray-200/70 bg-gray-50/60 p-4 dark:border-gray-800/60 dark:bg-[#181818]">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                Feature Access
-              </h4>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Toggle the features this user can access. Enabled: {enabledCount}
-              </p>
-            </div>
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {t('users.feature_access')}
+                </h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {t('users.feature_access_desc', { count: enabledCount })}
+                </p>
+              </div>
             {isSelf && (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-300">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Your account
+                  {t('users.your_account')}
               </span>
             )}
           </div>
@@ -328,7 +337,7 @@ function UserFormModal({
           </div>
           {isSelf && (
             <p className="mt-3 text-xs text-amber-600 dark:text-amber-300">
-              You cannot remove your own user-management access while signed in.
+              {t('users.cannot_remove_own_access')}
             </p>
           )}
         </div>
@@ -345,7 +354,7 @@ function UserFormModal({
             onClick={onClose}
             className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="submit"
@@ -355,12 +364,12 @@ function UserFormModal({
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Saving...
+                {t('users.saving')}
               </>
             ) : isEdit ? (
-              "Save changes"
+              t('users.save_changes')
             ) : (
-              "Create user"
+              t('users.create_user')
             )}
           </button>
         </div>
@@ -370,6 +379,7 @@ function UserFormModal({
 }
 
 function ResetPasswordModal({ user, onClose, onSubmit, submitting }) {
+  const { t } = useI18n();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -379,33 +389,33 @@ function ResetPasswordModal({ user, onClose, onSubmit, submitting }) {
     setError("");
 
     if (password.trim().length < 8) {
-      setError("Password must be at least 8 characters long.");
+      setError(t('users.error.password_length'));
       return;
     }
 
     if (password.trim() !== confirm.trim()) {
-      setError("Passwords do not match.");
+      setError(t('users.error.passwords_mismatch'));
       return;
     }
 
     try {
       await onSubmit({ password: password.trim() });
     } catch (submitError) {
-      setError(submitError?.message ?? "Unable to reset password");
+      setError(submitError?.message ?? t('users.error.unable_reset'));
     }
   };
 
   return (
     <ModalShell
-      title={`Reset password for ${user.name || user.email}`}
-      description="Generate a new password and share it securely with the user."
+      title={t('users.reset_password_title', { name: user.name || user.email })}
+      description={t('users.reset_password_desc')}
       onClose={onClose}
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              New password
+              {t('users.new_password')}
             </span>
             <input
               type="password"
@@ -413,25 +423,25 @@ function ResetPasswordModal({ user, onClose, onSubmit, submitting }) {
               onChange={(event) => setPassword(event.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-gray-700 dark:bg-[#161616] dark:text-gray-100"
               autoFocus
-              placeholder="At least 8 characters"
+              placeholder={t('users.placeholder.password_example')}
             />
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Confirm password
+              {t('users.confirm_password')}
             </span>
             <input
               type="password"
               value={confirm}
               onChange={(event) => setConfirm(event.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-gray-700 dark:bg-[#161616] dark:text-gray-100"
-              placeholder="Repeat the password"
+              placeholder={t('users.placeholder.password_repeat')}
             />
           </label>
         </div>
 
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          The user will be prompted to sign in with this new password. Encourage them to change it after logging in.
+          {t('users.reset_password_note')}
         </p>
 
         {error && (
@@ -446,7 +456,7 @@ function ResetPasswordModal({ user, onClose, onSubmit, submitting }) {
             onClick={onClose}
             className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="submit"
@@ -456,10 +466,10 @@ function ResetPasswordModal({ user, onClose, onSubmit, submitting }) {
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Resetting...
+                {t('users.resetting')}
               </>
             ) : (
-              "Reset password"
+              t('users.reset_password')
             )}
           </button>
         </div>
@@ -469,15 +479,16 @@ function ResetPasswordModal({ user, onClose, onSubmit, submitting }) {
 }
 
 function ConfirmDeleteModal({ user, onClose, onConfirm, submitting }) {
+  const { t } = useI18n();
   return (
     <ModalShell
-      title={`Remove ${user.name || user.email}?`}
-      description="Deleting a user revokes all access immediately. Purchase and activity history linked to this user will remain."
+      title={t('users.remove_title', { name: user.name || user.email })}
+      description={t('users.remove_description')}
       onClose={onClose}
     >
       <div className="space-y-5">
         <p className="text-sm text-gray-600 dark:text-gray-300">
-          This action cannot be undone. Consider disabling access instead if you might need to restore this account later.
+          {t('users.remove_warning')}
         </p>
         <div className="flex justify-end gap-3">
           <button
@@ -485,7 +496,7 @@ function ConfirmDeleteModal({ user, onClose, onConfirm, submitting }) {
             onClick={onClose}
             className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="button"
@@ -496,10 +507,10 @@ function ConfirmDeleteModal({ user, onClose, onConfirm, submitting }) {
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Removing...
+                {t('users.removing')}
               </>
             ) : (
-              "Delete user"
+              t('users.delete_user')
             )}
           </button>
         </div>
@@ -510,6 +521,7 @@ function ConfirmDeleteModal({ user, onClose, onConfirm, submitting }) {
 
 export function UserManagementTab() {
   const { user: currentUser } = useUser();
+  const { t } = useI18n();
   const {
     users,
     usersLoading,
@@ -539,15 +551,15 @@ export function UserManagementTab() {
         onSuccess: () => {
           setFeedback({
             type: "success",
-            message: `${feature.label} ${nextEnabled ? "enabled" : "disabled"} for ${
-              user.name || user.email
-            }`,
+            message: nextEnabled
+              ? t('users.permission_enabled', { feature: feature.label, user: user.name || user.email })
+              : t('users.permission_disabled', { feature: feature.label, user: user.name || user.email }),
           });
         },
         onError: (error) => {
           setFeedback({
             type: "error",
-            message: error?.message ?? "Unable to update permission",
+            message: error?.message ?? t('users.unable_update_permission'),
           });
         },
       },
@@ -558,7 +570,7 @@ export function UserManagementTab() {
     const result = await createUser({ name, username, email, password, features });
     setFeedback({
       type: "success",
-      message: `Invited ${result.user.name || result.user.email}`,
+      message: t('users.invited', { user: result.user.name || result.user.email }),
     });
     setCreateOpen(false);
   };
@@ -571,7 +583,7 @@ export function UserManagementTab() {
     });
     setFeedback({
       type: "success",
-      message: `Updated ${result.user.name || result.user.email}`,
+      message: t('users.updated', { user: result.user.name || result.user.email }),
     });
     setEditingUser(null);
   };
@@ -581,7 +593,7 @@ export function UserManagementTab() {
     await resetPassword({ userId: resettingUser.id, password });
     setFeedback({
       type: "success",
-      message: `Password reset for ${resettingUser.name || resettingUser.email}`,
+      message: t('users.password_reset', { user: resettingUser.name || resettingUser.email }),
     });
     setResettingUser(null);
   };
@@ -591,7 +603,7 @@ export function UserManagementTab() {
     await deleteUser(deletingUser.id);
     setFeedback({
       type: "success",
-      message: `Removed ${deletingUser.name || deletingUser.email}`,
+      message: t('users.removed', { user: deletingUser.name || deletingUser.email }),
     });
     setDeletingUser(null);
   };
@@ -629,10 +641,10 @@ export function UserManagementTab() {
       </div>
       <div className="space-y-1">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          No teammates yet
+          {t('users.no_teammates_title')}
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Invite your first collaborator to start delegating dashboard access.
+          {t('users.no_teammates_message')}
         </p>
       </div>
       <button
@@ -650,20 +662,20 @@ export function UserManagementTab() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-            Team & Access Control
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Invite teammates, manage feature access, reset credentials, and keep your workspace secure.
-          </p>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              {t('users.title')}
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {t('users.description')}
+            </p>
         </div>
-        <button
+          <button
           type="button"
           onClick={() => setCreateOpen(true)}
           className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
         >
           <UserPlus className="h-4 w-4" />
-          Invite user
+          {t('users.invite_user')}
         </button>
       </div>
 
@@ -677,7 +689,7 @@ export function UserManagementTab() {
             onClick={() => setFeedback(null)}
             className="text-xs font-semibold uppercase tracking-wide"
           >
-            Dismiss
+            {t('dismiss')}
           </button>
         </div>
       )}
@@ -686,7 +698,7 @@ export function UserManagementTab() {
 
       {usersError && !usersLoading && (
         <div className="rounded-2xl border border-rose-200/70 bg-rose-50 p-6 text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200">
-          Unable to load users right now. Refresh the page or check your permissions.
+          {t('users.unable_load')}
         </div>
       )}
 
@@ -721,54 +733,54 @@ export function UserManagementTab() {
                         </p>
                         {isAdmin && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
-                            Admin
+                            {t('users.admin')}
                           </span>
                         )}
                         {user.emailVerified ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-300">
-                            <ShieldCheck className="h-3.5 w-3.5" /> Verified
+                            <ShieldCheck className="h-3.5 w-3.5" /> {t('users.verified')}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-300">
-                            Pending verify
+                            {t('users.pending_verify')}
                           </span>
                         )}
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
                       <p className="text-xs font-medium text-gray-500 dark:text-gray-500">@{user.username}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">
-                        {enabledCount} of {FEATURE_LIST.length} features enabled
-                      </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500">
+                          {t('users.features_enabled', { count: enabledCount, total: FEATURE_LIST.length })}
+                        </p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <ActionButton
-                      icon={Pencil}
-                      label="Edit"
-                      onClick={() => setEditingUser(user)}
-                      disabled={updateUserLoading || isLoadingAnyMutation}
-                    />
-                    <ActionButton
-                      icon={KeyRound}
-                      label="Reset password"
-                      tone="primary"
-                      onClick={() => setResettingUser(user)}
-                      disabled={resetPasswordLoading || isLoadingAnyMutation}
-                    />
-                    <ActionButton
-                      icon={Trash2}
-                      label="Remove"
-                      tone="danger"
-                      onClick={() => setDeletingUser(user)}
-                      disabled={isSelf || deleteUserLoading || isLoadingAnyMutation}
-                    />
+                      <ActionButton
+                        icon={Pencil}
+                        label={t('users.edit')}
+                        onClick={() => setEditingUser(user)}
+                        disabled={updateUserLoading || isLoadingAnyMutation}
+                      />
+                      <ActionButton
+                        icon={KeyRound}
+                        label={t('users.reset_password')}
+                        tone="primary"
+                        onClick={() => setResettingUser(user)}
+                        disabled={resetPasswordLoading || isLoadingAnyMutation}
+                      />
+                      <ActionButton
+                        icon={Trash2}
+                        label={t('users.remove')}
+                        tone="danger"
+                        onClick={() => setDeletingUser(user)}
+                        disabled={isSelf || deleteUserLoading || isLoadingAnyMutation}
+                      />
                   </div>
                 </div>
 
                 <div className="mt-5 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    <ShieldCheck className="h-3.5 w-3.5" /> Feature access
-                  </div>
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      <ShieldCheck className="h-3.5 w-3.5" /> {t('users.feature_access')}
+                    </div>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {FEATURE_LIST.map((feature) => {
                       const allowed = Boolean(user.features?.[feature.key]);
@@ -786,11 +798,11 @@ export function UserManagementTab() {
                       );
                     })}
                   </div>
-                  {isSelf && (
-                    <p className="text-xs text-amber-600 dark:text-amber-300">
-                      Signed-in admins cannot remove their own management access.
-                    </p>
-                  )}
+                    {isSelf && (
+                      <p className="text-xs text-amber-600 dark:text-amber-300">
+                        {t('users.cannot_remove_own_access')}
+                      </p>
+                    )}
                 </div>
               </article>
             );

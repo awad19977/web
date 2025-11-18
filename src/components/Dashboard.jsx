@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useI18n } from '@/i18n';
 import { useDashboardReports } from "@/hooks/useDashboardReports";
 import { DashboardTabs } from "./Dashboard/DashboardTabs";
 import { OverviewTab } from "./Dashboard/OverviewTab";
@@ -21,6 +22,21 @@ export default function Dashboard({
   activeTab: propActiveTab,
   onTabChange: propOnTabChange,
 }) {
+  const { t } = useI18n();
+  const L = useCallback(
+    (key, fallback) => {
+      try {
+        const value = t(key);
+        if (!value || value === key) {
+          return fallback;
+        }
+        return value;
+      } catch (err) {
+        return fallback;
+      }
+    },
+    [t]
+  );
   const { user } = useUser();
   const featureFlags = user?.features ?? {};
 
@@ -70,10 +86,10 @@ export default function Dashboard({
       <div className="p-4 lg:p-6">
         <div className="bg-white dark:bg-[#1E1E1E] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            No features available
+            {L('dashboard.no_features_title', 'No features available')}
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Your account does not currently have access to any dashboard areas. Contact an administrator to request access.
+            {L('dashboard.no_features_message', 'Your account does not currently have access to any dashboard areas. Contact an administrator to request access.')}
           </p>
         </div>
       </div>

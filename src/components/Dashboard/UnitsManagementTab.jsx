@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useI18n } from '@/i18n';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function UnitsManagementTab({ canManageUnits }) {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [formData, setFormData] = useState({ name: "", symbol: "" });
   const [formError, setFormError] = useState("");
   const [feedback, setFeedback] = useState("");
@@ -13,9 +15,9 @@ export function UnitsManagementTab({ canManageUnits }) {
     isRefetching,
   } = useQuery({
     queryKey: ["stockUnits"],
-    queryFn: async () => {
+      queryFn: async () => {
       const response = await fetch("/api/units");
-      if (!response.ok) throw new Error("Failed to fetch units");
+      if (!response.ok) throw new Error(t('units.error.fetch_failed'));
       return response.json();
     },
   });
@@ -29,14 +31,14 @@ export function UnitsManagementTab({ canManageUnits }) {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create unit");
+        throw new Error(data.error || t('units.error.create_failed'));
       }
       return data;
     },
     onSuccess: () => {
       setFormData({ name: "", symbol: "" });
       setFormError("");
-      setFeedback("Unit created successfully.");
+      setFeedback(t('units.created'));
       queryClient.invalidateQueries({ queryKey: ["stockUnits"] });
     },
     onError: (error) => {
@@ -52,12 +54,12 @@ export function UnitsManagementTab({ canManageUnits }) {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data.error || "Failed to delete unit");
+        throw new Error(data.error || t('units.error.delete_failed'));
       }
       return unitId;
     },
     onSuccess: () => {
-      setFeedback("Unit removed.");
+      setFeedback(t('units.removed'));
       setFormError("");
       queryClient.invalidateQueries({ queryKey: ["stockUnits"] });
     },
@@ -77,7 +79,7 @@ export function UnitsManagementTab({ canManageUnits }) {
     const trimmedSymbol = formData.symbol.trim();
 
     if (!trimmedName) {
-      setFormError("Unit name is required.");
+      setFormError(t('units.error.name_required'));
       return;
     }
 
@@ -88,7 +90,7 @@ export function UnitsManagementTab({ canManageUnits }) {
     if (!canManageUnits || !unitId) return;
     let confirmed = true;
     if (typeof window !== "undefined") {
-      confirmed = window.confirm("Remove this unit? Units in use cannot be deleted.");
+      confirmed = window.confirm(t('units.confirm_remove'));
     }
     if (!confirmed) return;
     deleteUnit.mutate(unitId);
@@ -98,7 +100,7 @@ export function UnitsManagementTab({ canManageUnits }) {
     <div className="space-y-6">
       <div className="bg-white dark:bg-[#1E1E1E] border border-gray-200 dark:border-gray-800 rounded-lg p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Add Catalog Unit
+          {t('units.add_title')}
         </h2>
         {canManageUnits ? (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -114,7 +116,7 @@ export function UnitsManagementTab({ canManageUnits }) {
             )}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Unit Name
+                {t('units.label_name')}
               </label>
               <input
                 type="text"
@@ -124,14 +126,14 @@ export function UnitsManagementTab({ canManageUnits }) {
                   setFormData((prev) => ({ ...prev, name: value }));
                   setFormError("");
                 }}
-                placeholder="e.g. Kilogram"
+                placeholder={t('units.placeholder_name')}
                 required
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#262626] text-gray-900 dark:text-white"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Symbol (optional)
+                {t('units.label_symbol')}
               </label>
               <input
                 type="text"
@@ -141,7 +143,7 @@ export function UnitsManagementTab({ canManageUnits }) {
                   setFormData((prev) => ({ ...prev, symbol: value }));
                   setFormError("");
                 }}
-                placeholder="e.g. kg"
+                placeholder={t('units.placeholder_symbol')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#262626] text-gray-900 dark:text-white"
               />
             </div>
@@ -151,14 +153,13 @@ export function UnitsManagementTab({ canManageUnits }) {
                 disabled={createUnit.isLoading}
                 className="px-4 py-2 bg-[#18B84E] dark:bg-[#16A249] text-white rounded-md hover:bg-[#16A249] dark:hover:bg-[#14D45D] disabled:opacity-50"
               >
-                {createUnit.isLoading ? "Saving..." : "Save Unit"}
+                {createUnit.isLoading ? t('units.saving') : t('units.save')}
               </button>
             </div>
           </form>
         ) : (
           <div className="rounded-md border border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-            You have read-only access to the unit catalog. Contact an administrator if you
-            need permission to add or edit units.
+            {t('units.read_only_message')}
           </div>
         )}
       </div>
@@ -166,15 +167,15 @@ export function UnitsManagementTab({ canManageUnits }) {
       <div className="bg-white dark:bg-[#1E1E1E] border border-gray-200 dark:border-gray-800 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Unit Catalog
+            {t('units.catalog_title')}
           </h2>
           {(isLoading || isRefetching) && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">Refreshing…</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{t('units.refreshing')}</span>
           )}
         </div>
         {units.length === 0 ? (
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            No units found. Add a unit using the form above.
+            {t('units.no_units')}
           </p>
         ) : (
           <div className="overflow-x-auto -mx-3 sm:mx-0">
@@ -182,13 +183,13 @@ export function UnitsManagementTab({ canManageUnits }) {
               <thead className="bg-gray-50 dark:bg-[#262626]">
                 <tr>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Name
+                    {t('units.table.header_name')}
                   </th>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Symbol
+                    {t('units.table.header_symbol')}
                   </th>
                   <th className="px-3 sm:px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
+                    {t('units.table.header_actions')}
                   </th>
                 </tr>
               </thead>
@@ -202,7 +203,7 @@ export function UnitsManagementTab({ canManageUnits }) {
                         {unit.name}
                       </td>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {unit.symbol || "—"}
+                        {unit.symbol || t('units.dash')}
                       </td>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm">
                         {canManageUnits ? (
@@ -212,12 +213,12 @@ export function UnitsManagementTab({ canManageUnits }) {
                             disabled={deleteUnit.isLoading}
                             className="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/40 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50"
                           >
-                            {isDeleting ? "Removing…" : "Remove"}
+                            {isDeleting ? t('units.removing') : t('units.remove')}
                           </button>
                         ) : (
                           <span className="text-sm text-gray-400 dark:text-gray-500">
-                            View only
-                          </span>
+                                      {t('units.view_only')}
+                                    </span>
                         )}
                       </td>
                     </tr>

@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { useI18n } from '@/i18n';
 
 const numberFormatter = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 2,
@@ -51,11 +52,12 @@ export function ProductionOrdersTable({
   onCancel,
   onFail,
 }) {
+  const { t } = useI18n();
   if (loading) {
     return (
       <div className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-6 text-gray-600">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        Loading production orders…
+        {t('production.loading_orders')}
       </div>
     );
   }
@@ -66,7 +68,7 @@ export function ProductionOrdersTable({
         <div className="flex items-start">
           <AlertTriangle className="mr-2 mt-0.5 h-4 w-4" />
           <div>
-            <p className="font-medium">Failed to load production orders</p>
+            <p className="font-medium">{t('production.failed_load_orders')}</p>
             <p className="mt-1 text-red-600">{error}</p>
             {onRetry && (
               <button
@@ -74,7 +76,7 @@ export function ProductionOrdersTable({
                 className="mt-3 rounded-md border border-red-300 px-3 py-1 text-sm font-medium text-red-700 hover:bg-red-100"
                 onClick={onRetry}
               >
-                Try again
+                {t('production.try_again')}
               </button>
             )}
           </div>
@@ -86,8 +88,8 @@ export function ProductionOrdersTable({
   if (!loading && orders.length === 0) {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-6 text-center text-gray-600">
-        <p className="font-medium">No production orders yet.</p>
-        <p className="mt-1 text-sm text-gray-500">Create your first production order to see it listed here.</p>
+        <p className="font-medium">{t('production.no_orders')}</p>
+        <p className="mt-1 text-sm text-gray-500">{t('production.no_orders_message')}</p>
       </div>
     );
   }
@@ -97,41 +99,45 @@ export function ProductionOrdersTable({
       {fetching && (
         <div className="flex items-center justify-center bg-blue-50 px-4 py-2 text-sm text-blue-700">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Refreshing orders…
+          {t('production.refreshing')}
         </div>
       )}
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Product
+              {t('production.header_product')}
             </th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Planned qty
+              {t('production.header_planned')}
             </th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Produced qty
+              {t('production.header_produced')}
             </th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Status
+              {t('production.header_status')}
             </th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Estimated cost
+              {t('production.header_estimated_cost')}
             </th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Started
+              {t('production.header_started')}
             </th>
             <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Completed
+              {t('production.header_completed')}
             </th>
             <th scope="col" className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Actions
+              {t('production.header_actions')}
             </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
           {orders.map((order) => {
             const status = order.status ?? "planned";
+            // normalize spelling differences (e.g. `cancelled` vs `canceled`) so translations resolve
+            const normalizedStatus = status === 'cancelled' ? 'canceled' : status;
+            const localizedStatus = t(`production.status_${normalizedStatus}`);
+            const statusLabel = localizedStatus === `production.status_${normalizedStatus}` ? status.replace("_", " ") : localizedStatus;
             return (
               <tr key={order.id} className="hover:bg-gray-50">
                 <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
@@ -144,8 +150,8 @@ export function ProductionOrdersTable({
                   {numberFormatter.format(order.quantity_produced ?? 0)}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-sm">
-                  <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${getStatusBadgeClass(status)}`}>
-                    {status.replace("_", " ")}
+                  <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${getStatusBadgeClass(normalizedStatus)}`}>
+                    {statusLabel}
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
@@ -161,8 +167,8 @@ export function ProductionOrdersTable({
                   )}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
-                  {status === "completed" ? (
-                    <span className="text-xs font-medium text-green-700">Completed</span>
+                    {status === "completed" ? (
+                    <span className="text-xs font-medium text-green-700">{t('production.status_completed')}</span>
                   ) : status === "planned" ? (
                     <div className="inline-flex items-center gap-2">
                       <button
@@ -174,10 +180,10 @@ export function ProductionOrdersTable({
                         {completingOrderId === order.id ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Updating…
+                            {t('production.updating')}
                           </>
                         ) : (
-                          "Mark completed"
+                          t('production.mark_completed')
                         )}
                       </button>
 
@@ -186,7 +192,7 @@ export function ProductionOrdersTable({
                         onClick={() => onCancel?.(order)}
                         className="inline-flex items-center rounded-md border border-gray-200 px-3 py-1 text-sm font-medium text-rose-600 hover:bg-rose-50"
                       >
-                        Cancel
+                        {t('production.action_title.cancel')}
                       </button>
 
                       <button
@@ -194,11 +200,11 @@ export function ProductionOrdersTable({
                         onClick={() => onFail?.(order)}
                         className="inline-flex items-center rounded-md border border-gray-200 px-3 py-1 text-sm font-medium text-rose-800 bg-rose-50 hover:bg-rose-100"
                       >
-                        Mark failed
+                        {t('production.mark_failed')}
                       </button>
                     </div>
                   ) : (
-                    <span className="text-sm font-medium text-gray-600 capitalize">{status.replace("_", " ")}</span>
+                    <span className="text-sm font-medium text-gray-600">{statusLabel}</span>
                   )}
                 </td>
               </tr>

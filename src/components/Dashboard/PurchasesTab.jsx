@@ -1,10 +1,24 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { useI18n } from '@/i18n';
 import { useStockManagement } from "@/hooks/useStockManagement";
 import { PurchaseStockForm } from "./PurchaseStockForm";
 
 export function PurchasesTab({ canCreate = false }) {
+  const { t } = useI18n();
+  const L = useCallback(
+    (key, fallback) => {
+      try {
+        const value = t(key);
+        if (!value || value === key) return fallback;
+        return value;
+      } catch (err) {
+        return fallback;
+      }
+    },
+    [t]
+  );
   const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -71,22 +85,22 @@ export function PurchasesTab({ canCreate = false }) {
   return (
     <div className="bg-white dark:bg-[#1E1E1E] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Purchases</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{L('purchases_tab.title', 'Purchases')}</h3>
         <div className="flex items-center gap-3">
-          <label className="text-sm text-gray-600 dark:text-gray-400">Per page:</label>
+          <label className="text-sm text-gray-600 dark:text-gray-400">{L('purchases_tab.per_page', 'Per page:')}</label>
           <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="px-2 py-1 border rounded-md">
             <option value={10}>10</option>
             <option value={20}>20</option>
             <option value={50}>50</option>
           </select>
           {canCreate && (
-            <button onClick={handleOpenCreate} className="px-3 py-1 bg-[#18B84E] text-white rounded-md">Create Purchase</button>
+            <button onClick={handleOpenCreate} className="px-3 py-1 bg-[#18B84E] text-white rounded-md">{L('purchases_tab.create_purchase', 'Create Purchase')}</button>
           )}
         </div>
       </div>
 
-      {loading && <div className="text-sm text-gray-500">Loading purchases...</div>}
-      {error && <div className="text-sm text-red-600">Error: {error}</div>}
+      {loading && <div className="text-sm text-gray-500">{L('purchases_tab.loading', 'Loading purchases...')}</div>}
+      {error && <div className="text-sm text-red-600">{L('purchases_tab.error_prefix', 'Error:')} {error}</div>}
 
       {!loading && !error && (
         <>
@@ -94,20 +108,20 @@ export function PurchasesTab({ canCreate = false }) {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-3 py-2 text-left text-sm font-medium">Date</th>
-                  <th className="px-3 py-2 text-left text-sm font-medium">Stock</th>
-                  <th className="px-3 py-2 text-right text-sm font-medium">Quantity</th>
-                  <th className="px-3 py-2 text-left text-sm font-medium">Unit</th>
-                  <th className="px-3 py-2 text-right text-sm font-medium">Unit Cost</th>
-                  <th className="px-3 py-2 text-right text-sm font-medium">Total Cost</th>
-                  <th className="px-3 py-2 text-left text-sm font-medium">Supplier</th>
-                  <th className="px-3 py-2 text-left text-sm font-medium">Notes</th>
+                  <th className="px-3 py-2 text-left text-sm font-medium">{L('purchases_tab.header_date', 'Date')}</th>
+                  <th className="px-3 py-2 text-left text-sm font-medium">{L('purchases_tab.header_stock', 'Stock')}</th>
+                  <th className="px-3 py-2 text-right text-sm font-medium">{L('purchases_tab.header_quantity', 'Quantity')}</th>
+                  <th className="px-3 py-2 text-left text-sm font-medium">{L('purchases_tab.header_unit', 'Unit')}</th>
+                  <th className="px-3 py-2 text-right text-sm font-medium">{L('purchases_tab.header_unit_cost', 'Unit Cost')}</th>
+                  <th className="px-3 py-2 text-right text-sm font-medium">{L('purchases_tab.header_total_cost', 'Total Cost')}</th>
+                  <th className="px-3 py-2 text-left text-sm font-medium">{L('purchases_tab.header_supplier', 'Supplier')}</th>
+                  <th className="px-3 py-2 text-left text-sm font-medium">{L('purchases_tab.header_notes', 'Notes')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
                 {purchases.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-3 py-4 text-sm text-gray-500">No purchases found.</td>
+                    <td colSpan={8} className="px-3 py-4 text-sm text-gray-500">{L('purchases_tab.no_purchases', 'No purchases found.')}</td>
                   </tr>
                 )}
 
@@ -128,10 +142,10 @@ export function PurchasesTab({ canCreate = false }) {
           </div>
 
           <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-600">Showing page {page} of {totalPages} — {total} items</div>
+            <div className="text-sm text-gray-600">{L('purchases_tab.showing', 'Showing page {page} of {totalPages} — {total} items').replace('{page}', page).replace('{totalPages}', totalPages).replace('{total}', total)}</div>
             <div className="flex items-center gap-2">
-              <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-2 py-1 border rounded-md">Prev</button>
-              <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="px-2 py-1 border rounded-md">Next</button>
+              <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-2 py-1 border rounded-md">{L('purchases_tab.prev', 'Prev')}</button>
+              <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="px-2 py-1 border rounded-md">{L('purchases_tab.next', 'Next')}</button>
             </div>
           </div>
         </>
@@ -141,24 +155,24 @@ export function PurchasesTab({ canCreate = false }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-[#1E1E1E] rounded-lg p-6 w-full max-w-2xl mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Create Purchase</h3>
-              <button onClick={handleCloseCreate} className="text-sm text-gray-500">Close</button>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{L('purchases_tab.create_title', 'Create Purchase')}</h3>
+              <button onClick={handleCloseCreate} className="text-sm text-gray-500">{L('purchases_tab.close', 'Close')}</button>
             </div>
 
             {!selectedStock && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Stock</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{L('purchases_tab.select_stock_label', 'Select Stock')}</label>
                   <select value={selectedStockId ?? ""} onChange={(e) => setSelectedStockId(Number(e.target.value) || null)} className="w-full px-3 py-2 border rounded-md">
-                    <option value="">Select an item</option>
+                    <option value="">{L('purchases_tab.select_item', 'Select an item')}</option>
                     {stock.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name} (In stock: {s.current_quantity})</option>
+                      <option key={s.id} value={s.id}>{s.name} {L('purchases_tab.in_stock', '(In stock: {count})').replace('{count}', s.current_quantity)}</option>
                     ))}
                   </select>
                 </div>
                 <div className="flex gap-3">
-                  <button disabled={!selectedStockId} onClick={() => handleStartCreate(selectedStockId)} className="px-3 py-2 bg-[#18B84E] text-white rounded-md">Continue</button>
-                  <button onClick={handleCloseCreate} className="px-3 py-2 border rounded-md">Cancel</button>
+                  <button disabled={!selectedStockId} onClick={() => handleStartCreate(selectedStockId)} className="px-3 py-2 bg-[#18B84E] text-white rounded-md">{L('purchases_tab.continue', 'Continue')}</button>
+                  <button onClick={handleCloseCreate} className="px-3 py-2 border rounded-md">{L('cancel', 'Cancel')}</button>
                 </div>
               </div>
             )}

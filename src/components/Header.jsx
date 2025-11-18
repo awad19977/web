@@ -1,4 +1,6 @@
 import { ArrowLeft, ChevronDown, Filter, Calendar } from "lucide-react";
+import { useI18n } from '@/i18n';
+import { useCallback } from 'react';
 
 function splitTitle(title) {
   if (!title) return ["", ""];
@@ -9,8 +11,26 @@ function splitTitle(title) {
 }
 
 export default function Header() {
-  const appTitle = process.env.NEXT_PUBLIC_APP_TITLE || "Production Manager";
-  const [first, last] = splitTitle(appTitle);
+  const { locale, setLocale, t } = useI18n();
+  const L = useCallback(
+    (key, fallback) => {
+      try {
+        const value = t(key);
+        if (!value || value === key) {
+          return fallback;
+        }
+        return value;
+      } catch (err) {
+        return fallback;
+      }
+    },
+    [t]
+  );
+  const envTitle = process.env.NEXT_PUBLIC_APP_TITLE;
+  const envTitleAr = process.env.NEXT_PUBLIC_APP_TITLE_AR;
+  const appTitleRaw = locale === 'ar' ? (envTitleAr || envTitle || t('app.title')) : (envTitle || t('app.title'));
+  const [first, last] = splitTitle(appTitleRaw);
+  const toggleLocale = () => setLocale(locale === 'en' ? 'ar' : 'en');
 
   return (
     <div className="h-16 bg-white dark:bg-[#1E1E1E] border-b border-gray-200 dark:border-gray-800 px-4 lg:px-6 flex items-center justify-between shadow-sm dark:shadow-none">
@@ -46,17 +66,21 @@ export default function Header() {
       </div>
 
       {/* Center cluster - section tabs */}
-      <div className="flex items-center space-x-7">
+        <div className="flex items-center space-x-7">
         <button className="relative text-[#18B84E] dark:text-[#16A249] font-medium text-[15px] tracking-[-0.15px] hover:text-[#16A249] dark:hover:text-[#14D45D] active:text-[#149142] dark:active:text-[#12C151] transition-colors duration-150">
-          Dashboard
+          {t('header.dashboard')}
           <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#18B84E] dark:bg-[#16A249]"></div>
         </button>
-        
+
       </div>
 
       {/* Right cluster - contextual controls */}
       <div className="flex items-center space-x-3">
-       
+        <div className="flex items-center gap-2">
+          <button onClick={toggleLocale} className="text-sm px-2 py-1 rounded border">
+            {locale === 'en' ? L('header.locale_ar', 'العربية') : L('header.locale_en', 'EN')}
+          </button>
+        </div>
       </div>
     </div>
   );

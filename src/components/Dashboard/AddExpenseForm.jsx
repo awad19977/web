@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useI18n } from '@/i18n';
 
 const EXPENSE_CATEGORIES = [
   "Utilities",
@@ -24,8 +25,25 @@ const createInitialState = () => ({
 });
 
 export function AddExpenseForm({ onClose, onSubmit, loading, error }) {
+  const { t } = useI18n();
+  const L = useCallback((key, fallback, params) => {
+    try {
+      const v = t(key, params);
+      if (!v || v === key) return fallback;
+      return v;
+    } catch (err) {
+      return fallback;
+    }
+  }, [t]);
+
   const [formData, setFormData] = useState(() => createInitialState());
   const [validationError, setValidationError] = useState(null);
+
+  const toKey = (s) =>
+    String(s)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
 
   const resetForm = () => {
     setFormData(createInitialState());
@@ -37,18 +55,18 @@ export function AddExpenseForm({ onClose, onSubmit, loading, error }) {
     setValidationError(null);
 
     if (!formData.category) {
-      setValidationError("Select a category for this expense.");
+      setValidationError(L('add_expense_form.validation.select_category','Select a category for this expense.'));
       return;
     }
 
     if (!formData.description.trim()) {
-      setValidationError("Provide a short description.");
+      setValidationError(L('add_expense_form.validation.description_required','Provide a short description.'));
       return;
     }
 
     const amountValue = parseFloat(formData.amount);
     if (!Number.isFinite(amountValue) || amountValue <= 0) {
-      setValidationError("Amount must be a positive number.");
+      setValidationError(L('add_expense_form.validation.amount_positive','Amount must be a positive number.'));
       return;
     }
 
@@ -56,7 +74,7 @@ export function AddExpenseForm({ onClose, onSubmit, loading, error }) {
       ? new Date(formData.expense_date)
       : null;
     if (expenseDate && Number.isNaN(expenseDate.getTime())) {
-      setValidationError("Enter a valid expense date.");
+      setValidationError(L('add_expense_form.validation.date_invalid','Enter a valid expense date.'));
       return;
     }
 
@@ -73,12 +91,12 @@ export function AddExpenseForm({ onClose, onSubmit, loading, error }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-[#1E1E1E] rounded-lg p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-          Add Expense
+          {L('add_expense_form.title','Add Expense')}
         </h3>
         <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Category
+              {L('add_expense_form.labels.category','Category')}
             </label>
             <select
               required
@@ -89,10 +107,10 @@ export function AddExpenseForm({ onClose, onSubmit, loading, error }) {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#262626] text-gray-900 dark:text-white"
               autoComplete="off"
             >
-              <option value="">Select a category</option>
+              <option value="">{L('add_expense_form.placeholders.select_category','Select a category')}</option>
               {EXPENSE_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
-                  {category}
+                  {L(`expense_categories.${toKey(category)}`, category)}
                 </option>
               ))}
             </select>
@@ -100,7 +118,7 @@ export function AddExpenseForm({ onClose, onSubmit, loading, error }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Description
+              {L('add_expense_form.labels.description','Description')}
             </label>
             <input
               type="text"
@@ -116,7 +134,7 @@ export function AddExpenseForm({ onClose, onSubmit, loading, error }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Amount ($)
+              {L('add_expense_form.labels.amount','Amount ($)')}
             </label>
             <input
               type="number"
@@ -133,7 +151,7 @@ export function AddExpenseForm({ onClose, onSubmit, loading, error }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Expense date
+              {L('add_expense_form.labels.expense_date','Expense date')}
             </label>
             <input
               type="date"
@@ -149,7 +167,7 @@ export function AddExpenseForm({ onClose, onSubmit, loading, error }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Notes
+              {L('add_expense_form.labels.notes','Notes')}
             </label>
             <textarea
               value={formData.notes}
@@ -177,14 +195,14 @@ export function AddExpenseForm({ onClose, onSubmit, loading, error }) {
               }}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
             >
-              Cancel
+              {L('add_expense_form.buttons.cancel','Cancel')}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="flex-1 px-4 py-2 bg-[#18B84E] dark:bg-[#16A249] text-white rounded-md hover:bg-[#16A249] dark:hover:bg-[#14D45D] disabled:opacity-50"
             >
-              {loading ? "Adding..." : "Add Expense"}
+              {loading ? L('add_expense_form.buttons.adding','Adding...') : L('add_expense_form.buttons.add','Add Expense')}
             </button>
           </div>
         </form>

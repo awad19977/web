@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { useI18n } from '@/i18n';
 
 const numberFormatter = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 2,
@@ -30,13 +31,14 @@ export function PendingStockAdjustments({
   onRetry,
   readOnly = false,
 }) {
+  const { t } = useI18n();
   if (error) {
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
         <div className="flex items-start">
           <AlertTriangle className="mr-2 mt-0.5 h-4 w-4" />
           <div>
-            <p className="font-medium">Unable to load adjustment requests</p>
+            <p className="font-medium">{t('pending_adjustments.unable_load')}</p>
             <p className="mt-1 text-red-600">{error}</p>
             {onRetry ? (
               <button
@@ -44,7 +46,7 @@ export function PendingStockAdjustments({
                 onClick={onRetry}
                 className="mt-3 inline-flex items-center rounded-md border border-red-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-red-700 hover:bg-red-100"
               >
-                Retry
+                {t('pending_adjustments.retry')}
               </button>
             ) : null}
           </div>
@@ -56,8 +58,8 @@ export function PendingStockAdjustments({
   if (!adjustments.length) {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-600">
-        <p className="font-medium">No pending adjustments.</p>
-        <p className="mt-1 text-gray-500">Requests will appear here when team members submit them.</p>
+        <p className="font-medium">{t('pending_adjustments.no_pending')}</p>
+        <p className="mt-1 text-gray-500">{t('pending_adjustments.no_pending_message')}</p>
       </div>
     );
   }
@@ -67,21 +69,21 @@ export function PendingStockAdjustments({
       <table className="min-w-full divide-y divide-gray-200 text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-4 py-3 text-left font-semibold text-gray-500">Stock</th>
-            <th className="px-4 py-3 text-left font-semibold text-gray-500">Type</th>
-            <th className="px-4 py-3 text-left font-semibold text-gray-500">Quantity</th>
-            <th className="px-4 py-3 text-left font-semibold text-gray-500">Requested by</th>
-            <th className="px-4 py-3 text-left font-semibold text-gray-500">Reason</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-500">{t('pending_adjustments.header_stock')}</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-500">{t('pending_adjustments.header_type')}</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-500">{t('pending_adjustments.header_quantity')}</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-500">{t('pending_adjustments.header_requested_by')}</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-500">{t('pending_adjustments.header_reason')}</th>
             {readOnly ? (
               <>
-                <th className="px-4 py-3 text-left font-semibold text-gray-500">Resolved by</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-500">Resolved</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-500">{t('pending_adjustments.header_resolved_by')}</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-500">{t('pending_adjustments.header_resolved')}</th>
               </>
             ) : (
-              <th className="px-4 py-3 text-left font-semibold text-gray-500">Submitted</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-500">{t('pending_adjustments.header_submitted')}</th>
             )}
             {!readOnly && (
-              <th className="px-4 py-3 text-right font-semibold text-gray-500">Actions</th>
+              <th className="px-4 py-3 text-right font-semibold text-gray-500">{t('pending_adjustments.header_actions')}</th>
             )}
           </tr>
         </thead>
@@ -94,7 +96,7 @@ export function PendingStockAdjustments({
                   {adjustment.stock_name ?? `Stock #${adjustment.stock_id}`}
                 </td>
                 <td className="px-4 py-3 capitalize text-gray-700">
-                  {adjustment.adjustment_type}
+                  {t(`pending_adjustments.${adjustment.adjustment_type}`)}
                 </td>
                 <td className="px-4 py-3 text-gray-700">
                   {numberFormatter.format(adjustment.quantity)}
@@ -135,7 +137,7 @@ export function PendingStockAdjustments({
                         ) : (
                           <XCircle className="h-4 w-4" />
                         )}
-                        Reject
+                          {t('pending_adjustments.reject')}
                       </button>
                       <button
                         type="button"
@@ -148,7 +150,7 @@ export function PendingStockAdjustments({
                         ) : (
                           <CheckCircle2 className="h-4 w-4" />
                         )}
-                        Approve
+                          {t('pending_adjustments.approve')}
                       </button>
                     </div>
                   </td>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
+import { useI18n } from '@/i18n';
 
 function formatNumber(n) {
   if (typeof n !== "number" || Number.isNaN(n)) return "0";
@@ -8,6 +10,17 @@ function formatNumber(n) {
 }
 
 export default function StockLevelsReport() {
+  const { t } = useI18n();
+  const L = useCallback((key, fallback, params) => {
+    try {
+      const v = t(key, params);
+      if (!v || v === key) return fallback;
+      return v;
+    } catch (err) {
+      return fallback;
+    }
+  }, [t]);
+
   const { data = [], isLoading, error } = useQuery({
     queryKey: ["reports", "stock-levels"],
     queryFn: async () => {
@@ -19,7 +32,7 @@ export default function StockLevelsReport() {
   });
 
   const handlePrint = () => {
-    const title = "Stock Levels";
+    const title = L('stock_levels_report.title','Stock Levels');
     const rowsHtml = (data || [])
       .map((r) => `
         <tr>
@@ -42,16 +55,16 @@ export default function StockLevelsReport() {
         </head>
         <body>
           <h1>${title}</h1>
-          <p>Generated: ${new Date().toLocaleString()}</p>
+          <p>${L('stock_levels_report.generated','Generated:')} ${new Date().toLocaleString()}</p>
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th style="text-align:right">Quantity</th>
-                <th>Unit</th>
-                <th style="text-align:right">Unit Cost</th>
-                <th>Supplier</th>
+                <th>${L('stock_levels_report.table_name','Name')}</th>
+                <th>${L('stock_levels_report.table_description','Description')}</th>
+                <th style="text-align:right">${L('stock_levels_report.table_quantity','Quantity')}</th>
+                <th>${L('stock_levels_report.table_unit','Unit')}</th>
+                <th style="text-align:right">${L('stock_levels_report.table_unit_cost','Unit Cost')}</th>
+                <th>${L('stock_levels_report.table_supplier','Supplier')}</th>
               </tr>
             </thead>
             <tbody>
@@ -64,49 +77,49 @@ export default function StockLevelsReport() {
 
     const w = window.open("", "_blank");
     if (!w) {
-      alert("Unable to open print window. Check popup blocker.");
+      alert(L('stock_levels_report.print_blocked','Unable to open print window. Check popup blocker.'));
       return;
     }
     try {
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const newWin = window.open(url, '_blank');
-      if (!newWin) { URL.revokeObjectURL(url); return alert('Unable to open print window. Check popup blocker.'); }
-      setTimeout(() => { try { newWin.print(); } catch (err) { console.error('Print failed', err); alert('Print failed. Please try manually from the new tab.'); } try { URL.revokeObjectURL(url); } catch (e) {} }, 300);
+      if (!newWin) { URL.revokeObjectURL(url); return alert(L('stock_levels_report.print_blocked','Unable to open print window. Check popup blocker.')); }
+      setTimeout(() => { try { newWin.print(); } catch (err) { console.error('Print failed', err); alert(L('stock_levels_report.print_failed','Print failed. Please try manually from the new tab.')); } try { URL.revokeObjectURL(url); } catch (e) {} }, 300);
     } catch (err) {
       console.error('Failed to prepare print window', err);
-      alert('Unable to open print window. Check popup blocker.');
+      alert(L('stock_levels_report.print_blocked','Unable to open print window. Check popup blocker.'));
     }
   };
 
-  if (isLoading) return <div>Loading stock levels...</div>;
-  if (error) return <div className="text-sm text-red-600">{error.message}</div>;
+  if (isLoading) return <div>{L('stock_levels_report.loading','Loading stock levels...')}</div>;
+  if (error) return <div className="text-sm text-red-600">{L('stock_levels_report.failed_fetch','Failed to load stock levels')}</div>;
 
   return (
     <div className="bg-white dark:bg-[#1E1E1E] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Current Stock Levels</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Showing items with quantity &gt; 0</p>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{L('stock_levels_report.heading','Current Stock Levels')}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{L('stock_levels_report.description','Showing items with quantity > 0')}</p>
         </div>
         <div>
-          <button onClick={handlePrint} className="rounded-md bg-blue-600 px-3 py-1 text-white text-sm">Print</button>
+          <button onClick={handlePrint} className="rounded-md bg-blue-600 px-3 py-1 text-white text-sm">{L('stock_levels_report.print','Print')}</button>
         </div>
       </div>
 
       {data.length === 0 ? (
-        <p className="text-sm text-gray-500">No stock items with positive quantity.</p>
+        <p className="text-sm text-gray-500">{L('stock_levels_report.no_data','No stock items with positive quantity.')}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="text-left text-gray-600 dark:text-gray-300">
-                <th className="py-2 pr-4">Name</th>
-                <th className="py-2 pr-4">Description</th>
-                <th className="py-2 pr-4">Quantity</th>
-                <th className="py-2 pr-4">Unit</th>
-                <th className="py-2 pr-4">Unit Cost</th>
-                <th className="py-2 pr-4">Supplier</th>
+                <th className="py-2 pr-4">{L('stock_levels_report.table_name','Name')}</th>
+                <th className="py-2 pr-4">{L('stock_levels_report.table_description','Description')}</th>
+                <th className="py-2 pr-4">{L('stock_levels_report.table_quantity','Quantity')}</th>
+                <th className="py-2 pr-4">{L('stock_levels_report.table_unit','Unit')}</th>
+                <th className="py-2 pr-4">{L('stock_levels_report.table_unit_cost','Unit Cost')}</th>
+                <th className="py-2 pr-4">{L('stock_levels_report.table_supplier','Supplier')}</th>
               </tr>
             </thead>
             <tbody>

@@ -7,3 +7,22 @@
     @apply outline-none focus:outline-none;
   }
 }
+
+/* RTL adjustments: basic swaps for direction-sensitive utilities */
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+html[dir="rtl"] .text-left { text-align: right !important; }
+html[dir="rtl"] .text-right { text-align: left !important; }
+html[dir="rtl"] .float-left { float: right !important; }
+html[dir="rtl"] .float-right { float: left !important; }
+
+/* Swap common utility margins for small icon/text groups used across the UI */
+html[dir="rtl"] .items-center > :first-child { margin-left: 0 !important; margin-right: .5rem !important; }
+html[dir="rtl"] .items-center > :last-child { margin-right: 0 !important; }
+
+/* Make sure inputs default to logical text alignment in RTL */
+html[dir="rtl"] input, html[dir="rtl"] textarea, html[dir="rtl"] select {
+  text-align: right;
+}

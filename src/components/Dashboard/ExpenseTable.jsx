@@ -11,7 +11,30 @@ const formatDate = (value) => {
   return date.toLocaleDateString();
 };
 
+import { useCallback } from 'react';
+import { useI18n } from '@/i18n';
+
 export function ExpenseTable({ expenses }) {
+  const { t } = useI18n();
+  const L = useCallback((key, fallback, params) => {
+    try {
+      const value = t(key, params);
+      if (!value || value === key) return fallback;
+      return value;
+    } catch (err) {
+      return fallback;
+    }
+  }, [t]);
+
+  const dash = L('dash', '—');
+const toKey = (s) =>
+    String(s)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
+
+
+
   return (
     <div className="bg-white dark:bg-[#1E1E1E] rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
       <div className="overflow-x-auto">
@@ -19,19 +42,19 @@ export function ExpenseTable({ expenses }) {
           <thead className="bg-gray-50 dark:bg-[#262626]">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Category
+                {L('expense_management.expense_table.header_category', 'Category')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Description
+                {L('expense_management.expense_table.header_description', 'Description')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Amount
+                {L('expense_management.expense_table.header_amount', 'Amount')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Date
+                {L('expense_management.expense_table.header_date', 'Date')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Notes
+                {L('expense_management.expense_table.header_notes', 'Notes')}
               </th>
             </tr>
           </thead>
@@ -43,7 +66,7 @@ export function ExpenseTable({ expenses }) {
               >
                 <td className="px-6 py-4">
                   <span className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full">
-                    {expense.category}
+                    {L(`expense_categories.${toKey(expense.category)}`, expense.category)}
                   </span>
                 </td>
                 <td className="px-6 py-4">
@@ -55,10 +78,10 @@ export function ExpenseTable({ expenses }) {
                   {currencyFormatter.format(expense.amount ?? 0)}
                 </td>
                 <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                  {formatDate(expense.expense_date)}
+                  {expense.expense_date ? new Date(expense.expense_date).toLocaleDateString() : dash}
                 </td>
                 <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                  {expense.notes?.trim() ? expense.notes : "—"}
+                  {expense.notes?.trim() ? expense.notes : dash}
                 </td>
               </tr>
             ))}

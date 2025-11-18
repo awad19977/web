@@ -1,3 +1,5 @@
+import { useI18n } from "@/i18n";
+import { useCallback } from "react";
 const currencyFormatter = new Intl.NumberFormat(undefined, {
   style: "currency",
   currency: "USD",
@@ -12,7 +14,19 @@ const quantityFormatter = new Intl.NumberFormat(undefined, {
 export function ProductTable({ products = [], loading = false, onManageRecipe }) {
   const hasActions = typeof onManageRecipe === "function";
   const columnCount = hasActions ? 7 : 6;
-
+ const { t } = useI18n();
+  const L = useCallback(
+    (key, fallback, params) => {
+      try {
+        const value = t(key, params);
+        if (!value || value === key) return fallback;
+        return value;
+      } catch (err) {
+        return fallback;
+      }
+    },
+    [t]
+  );
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-[#1E1E1E]">
       <div className="overflow-x-auto">
@@ -20,26 +34,26 @@ export function ProductTable({ products = [], loading = false, onManageRecipe })
           <thead className="bg-gray-50 dark:bg-[#262626]">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Product
+                {L('products.product_table.header_name', 'Name')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Current Stock
+                {L('products.product_table.header_current_stock', 'Current Stock')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Selling Price
+                {L('products.product_table.header_sell_price', 'Sell Price')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Total Sold
+                {L('products.product_table.header_total_sold', 'Total Sold')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Revenue
+                {L('products.product_table.header_revenue', 'Revenue')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Recipe
+                {L('products.product_table.header_recipe', 'Recipe')}
               </th>
               {hasActions ? (
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  Actions
+                  {L('products.product_table.header_actions', 'Actions')}
                 </th>
               ) : null}
             </tr>
@@ -48,13 +62,14 @@ export function ProductTable({ products = [], loading = false, onManageRecipe })
             {loading ? (
               <tr>
                 <td colSpan={columnCount} className="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-                  Loading products...
+                  {L('products.product_table.loading', 'Loading products...')}
                 </td>
               </tr>
             ) : products.length === 0 ? (
               <tr>
                 <td colSpan={columnCount} className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
-                  No products documented yet.
+                  {L('products.product_table.no_products', 'No products documented yet.')}
+                  {L('products.product_table.no_products_message', 'Add a new product to start tracking sales and inventory.')}
                 </td>
               </tr>
             ) : (
@@ -71,7 +86,7 @@ export function ProductTable({ products = [], loading = false, onManageRecipe })
                         {product.name}
                       </div>
                       <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {product.description || "No description provided"}
+                        {product.description || L('products.product_table.no_description', 'No description provided.')}
                       </div>
                     </td>
                     <td className="px-6 py-4 align-top text-gray-900 dark:text-white">
@@ -95,18 +110,18 @@ export function ProductTable({ products = [], loading = false, onManageRecipe })
                                 ? quantityFormatter.format(Number(recipe.quantity))
                                 : null;
                             const unit = recipe.stock_unit ? ` ${recipe.stock_unit}` : "";
-                            const ingredientName = recipe.stock_name || "Unnamed stock";
+                            const ingredientName = recipe.stock_name || L('products.product_table.unnamed', 'Unnamed stock');
                             const cost = Number(recipe.stock_unit_cost ?? 0);
 
                             return (
                               <li key={recipe.id ?? `${recipe.stock_id}-${ingredientName}`}>
                                 <span className="font-medium text-gray-800 dark:text-gray-200">
-                                  {quantity ? `${quantity}${unit}` : "Qty N/A"}
+                                  {quantity ? `${quantity}${unit}` : L('products.product_table.no_qty', 'Qty N/A')}
                                 </span>{" "}
                                 of <span className="text-gray-800 dark:text-gray-100">{ingredientName}</span>
                                 {cost > 0 ? (
                                   <span className="text-gray-500 dark:text-gray-400">
-                                    {" "}• {currencyFormatter.format(cost)} per unit
+                                    {" "}• {currencyFormatter.format(cost)} {L('products.product_table.per_unit', 'per unit')}
                                   </span>
                                 ) : null}
                               </li>
@@ -114,7 +129,7 @@ export function ProductTable({ products = [], loading = false, onManageRecipe })
                           })}
                         </ul>
                       ) : (
-                        <span className="text-gray-400 dark:text-gray-500">No recipe linked</span>
+                        <span className="text-gray-400 dark:text-gray-500">{L('products.product_table.no_recipe', 'No recipe linked')}</span>
                       )}
                     </td>
                     {hasActions ? (
@@ -124,7 +139,7 @@ export function ProductTable({ products = [], loading = false, onManageRecipe })
                           onClick={() => onManageRecipe(product)}
                           className="text-sm font-semibold text-[#18B84E] hover:text-[#16A249] dark:text-[#16A249] dark:hover:text-[#14D45D]"
                         >
-                          Manage recipe
+                          {L('products.product_table.manage_recipe', 'Manage recipe')}
                         </button>
                       </td>
                     ) : null}

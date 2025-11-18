@@ -24,6 +24,7 @@ import {
 import useAuth from "@/utils/useAuth";
 import useUser from "@/utils/useUser";
 import { DASHBOARD_TABS } from "./Dashboard/tabConfig";
+import { useI18n } from '@/i18n';
 
 const TAB_ICONS = {
   overview: LayoutGrid,
@@ -43,11 +44,12 @@ export default function Sidebar({ onClose, activeTab, onTabChange }) {
   const [signingOut, setSigningOut] = useState(false);
 
   const featureFlags = user?.features ?? {};
+  const { t } = useI18n();
 
   const workplaceNavItems = DASHBOARD_TABS.filter((tab) => featureFlags[tab.feature] !== false).map(
     (tab) => ({
       icon: TAB_ICONS[tab.id] ?? LayoutGrid,
-      label: tab.label,
+      label: t(`tabs.${tab.id}`) || tab.label,
       tabId: tab.id,
       active: activeTab === tab.id,
     }),
@@ -97,7 +99,10 @@ export default function Sidebar({ onClose, activeTab, onTabChange }) {
           </div>
           <div className="ml-2 flex items-center">
             {(() => {
-              const appTitle = process.env.NEXT_PUBLIC_APP_TITLE || "Production Manager";
+              const { t, locale } = useI18n();
+              const envTitle = process.env.NEXT_PUBLIC_APP_TITLE;
+              const envTitleAr = process.env.NEXT_PUBLIC_APP_TITLE_AR;
+              const appTitle = locale === 'ar' ? (envTitleAr || envTitle || t('app.title')) : (envTitle || t('app.title'));
               const parts = String(appTitle).trim().split(" ");
               const last = parts.length > 1 ? parts.pop() : null;
               const first = parts.join(" ");
@@ -129,7 +134,7 @@ export default function Sidebar({ onClose, activeTab, onTabChange }) {
           <input
             type="text"
             className="block w-full pl-10 pr-16 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-[#262626] placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#18B84E] dark:focus:ring-[#16A249] focus:border-transparent text-sm transition-colors duration-150"
-            placeholder="Search"
+            placeholder={t('search')}
           />
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
             <kbd className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
@@ -144,12 +149,12 @@ export default function Sidebar({ onClose, activeTab, onTabChange }) {
         {/* WORKPLACE Section */}
         <div className="px-4 mb-6">
           <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-            WORKPLACE
+            {t('workplace')}
           </h3>
           <nav className="space-y-1">
             {workplaceNavItems.length === 0 && !loading ? (
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                No sections available for your account.
+                {t('no_sections')}
               </p>
             ) : (
               workplaceNavItems.map((item, index) => {
@@ -188,7 +193,7 @@ export default function Sidebar({ onClose, activeTab, onTabChange }) {
         {/* ACCOUNT Section */}
         <div className="px-4 mb-6">
           <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-            ACCOUNT
+            {t('account')}
           </h3>
           <nav className="space-y-1">
             {accountNavItems.map((item, index) => {
@@ -223,7 +228,7 @@ export default function Sidebar({ onClose, activeTab, onTabChange }) {
             ) : (
               <LogOut className="flex-shrink-0 -ml-1 mr-3 h-5 w-5 text-red-500 dark:text-red-400 group-hover:text-red-600 dark:group-hover:text-red-300 group-active:text-red-700 dark:group-active:text-red-200 transition-colors duration-150" />
             )}
-            <span>{signingOut ? "Signing out..." : "Logout"}</span>
+            <span>{signingOut ? t('signing_out') : t('logout')}</span>
           </button>
         </div>
       </div>

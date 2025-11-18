@@ -9,6 +9,7 @@ import { FEATURE_KEYS } from "@/constants/featureFlags";
 import { useStockAdjustments } from "@/hooks/useStockAdjustments";
 import { RequestStockAdjustmentForm } from "./RequestStockAdjustmentForm";
 import { PendingStockAdjustments } from "./PendingStockAdjustments";
+import { useI18n } from '@/i18n';
 
 export function StockManagementTab() {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -44,6 +45,8 @@ export function StockManagementTab() {
     deleteStock,
     deleteStockLoading,
   } = useStockManagement();
+
+  const { t } = useI18n();
 
   const handleAddStock = (data) => {
     addStock(data, {
@@ -85,9 +88,7 @@ export function StockManagementTab() {
     if (!canDeleteStock) return;
     let confirmed = true;
     if (typeof window !== "undefined") {
-      confirmed = window.confirm(
-        `Delete ${item.name}? This will remove the stock record but retain purchase history.`,
-      );
+      confirmed = window.confirm(t('stock_management.delete_confirm', { name: item.name }));
     }
     if (!confirmed) return;
 
@@ -128,17 +129,17 @@ export function StockManagementTab() {
     createAdjustment(payload, {
       onSuccess: () => {
         setShowAdjustmentForm(false);
-        setAdjustmentBanner({ type: "success", message: "Adjustment request submitted for review." });
+        setAdjustmentBanner({ type: "success", message: t('stock_management.adjustment_submitted') });
       },
       onError: (error) => {
-        setAdjustmentBanner({ type: "error", message: error?.message ?? "Unable to submit adjustment." });
+        setAdjustmentBanner({ type: "error", message: error?.message ?? t('stock_management.adjustment_submit_failed') });
       },
     });
   };
 
   const handleResolveAdjustment = (adjustment, action) => {
     if (!adjustment?.id) return;
-    const promptLabel = action === "approve" ? "Add approval notes (optional)" : "Reason for rejection (optional)";
+    const promptLabel = action === "approve" ? t('stock_management.approval_notes_optional') : t('stock_management.rejection_reason_optional');
     let notes = "";
 
     if (typeof window !== "undefined") {
@@ -158,12 +159,12 @@ export function StockManagementTab() {
           setResolvingAdjustmentId(null);
           setAdjustmentBanner({
             type: "success",
-            message: action === "approve" ? "Adjustment approved." : "Adjustment rejected.",
+            message: action === "approve" ? t('stock_management.adjustment_approved') : t('stock_management.adjustment_rejected'),
           });
         },
         onError: (error) => {
           setResolvingAdjustmentId(null);
-          setAdjustmentBanner({ type: "error", message: error?.message ?? "Unable to update adjustment." });
+          setAdjustmentBanner({ type: "error", message: error?.message ?? t('stock_management.unable_update_adjustment') });
         },
       },
     );
@@ -173,7 +174,7 @@ export function StockManagementTab() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          Stock Management
+          {t('stock_management.title')}
         </h2>
         <div className="flex items-center gap-3">
           {canRequestAdjustment ? (
@@ -185,7 +186,7 @@ export function StockManagementTab() {
               className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800"
             >
               <SlidersHorizontal className="h-4 w-4" />
-              Adjust Quantity
+              {t('stock_management.adjust_quantity')}
             </button>
           ) : null}
           {canCreateStock ? (
@@ -194,7 +195,7 @@ export function StockManagementTab() {
               className="flex items-center gap-2 px-4 py-2 bg-[#18B84E] dark:bg-[#16A249] text-white rounded-lg hover:bg-[#16A249] dark:hover:bg-[#14D45D] transition-colors duration-150"
             >
               <Plus className="w-4 h-4" />
-              Add Stock Item
+              {t('stock_management.add_stock')}
             </button>
           ) : null}
         </div>
@@ -220,7 +221,7 @@ export function StockManagementTab() {
               onClick={() => setAdjustmentBanner(null)}
               className="mt-1 text-xs font-semibold uppercase tracking-wide hover:underline"
             >
-              Dismiss
+              {t('dismiss')}
             </button>
           </div>
         </div>
@@ -241,9 +242,13 @@ export function StockManagementTab() {
         <div className="space-y-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Stock adjustments</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('stock_management.stock_adjustments')}</h3>
               <div className="ml-2 inline-flex overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
-                {(["pending","approved","rejected"]).map((key) => (
+                {[
+                  { key: 'pending', label: t('stock_management.pending') },
+                  { key: 'approved', label: t('stock_management.approved') },
+                  { key: 'rejected', label: t('stock_management.rejected') },
+                ].map(({ key, label }) => (
                   <button
                     key={key}
                     type="button"
@@ -254,7 +259,7 @@ export function StockManagementTab() {
                         : "bg-white text-gray-700 hover:bg-gray-50 dark:bg-[#1E1E1E] dark:text-gray-300 dark:hover:bg-[#262626]"
                     }`}
                   >
-                    {key}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -265,7 +270,7 @@ export function StockManagementTab() {
                   type="search"
                   value={filterSearch}
                   onChange={(e) => setFilterSearch(e.target.value)}
-                  placeholder="Search name/user/reason"
+                  placeholder={t('stock_management.search_placeholder')}
                   className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 dark:border-gray-700 dark:bg-[#1E1E1E] dark:text-gray-100"
                 />
               </div>
@@ -275,18 +280,18 @@ export function StockManagementTab() {
                   value={filterFrom}
                   onChange={(e) => setFilterFrom(e.target.value)}
                   className="rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-[#1E1E1E] dark:text-gray-100"
-                  aria-label="From date"
+                  aria-label={t('stock_management.from_date')}
                 />
-                <span className="text-gray-400">–</span>
+                <span className="text-gray-400">{t('stock_management.range_dash')}</span>
                 <input
                   type="date"
                   value={filterTo}
                   onChange={(e) => setFilterTo(e.target.value)}
                   className="rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-[#1E1E1E] dark:text-gray-100"
-                  aria-label="To date"
+                  aria-label={t('stock_management.to_date')}
                 />
               </div>
-              {adjustmentsLoading ? <span className="text-sm text-gray-500">Loading…</span> : null}
+              {adjustmentsLoading ? <span className="text-sm text-gray-500">{t('stock_management.loading')}</span> : null}
             </div>
           </div>
           <PendingStockAdjustments

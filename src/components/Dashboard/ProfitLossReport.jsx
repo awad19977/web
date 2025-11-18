@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useCallback } from "react";
+import { useI18n } from '@/i18n';
 
 function formatCurrency(n) {
   if (typeof n !== "number" || Number.isNaN(n)) return "$0";
@@ -37,6 +38,17 @@ function buildRows(salesData = [], expensesData = []) {
 }
 
 export function ProfitLossReport({ reports = {} }) {
+  const { t } = useI18n();
+  const L = useCallback((key, fallback, params) => {
+    try {
+      const v = t(key, params);
+      if (!v || v === key) return fallback;
+      return v;
+    } catch (err) {
+      return fallback;
+    }
+  }, [t]);
+
   const salesData = reports.salesData ?? [];
   const expensesData = reports.expensesData ?? [];
   const rows = buildRows(salesData, expensesData);
@@ -52,7 +64,7 @@ export function ProfitLossReport({ reports = {} }) {
   );
 
   const handlePrint = () => {
-    const title = `Profit and Loss Report`;
+    const title = L('reports.profit_loss_report.title', 'no and Loss Report');
     const htmlRows = rows
       .map(
         (r) => `
@@ -81,20 +93,20 @@ export function ProfitLossReport({ reports = {} }) {
         </head>
         <body>
           <h1>${title}</h1>
-          <p>Generated: ${new Date().toLocaleString()}</p>
+          <p>${L('reports.profit_loss_report.generated','Generated:')} ${new Date().toLocaleString()}</p>
           <table>
             <thead>
               <tr>
-                <th style="padding:8px">Date</th>
-                <th style="padding:8px;text-align:right">Revenue</th>
-                <th style="padding:8px;text-align:right">Expenses</th>
-                <th style="padding:8px;text-align:right">Net</th>
+                <th style="padding:8px">${L('reports.profit_loss_report.table_date','Date')}</th>
+                <th style="padding:8px;text-align:right">${L('reports.profit_loss_report.table_revenue','Revenue')}</th>
+                <th style="padding:8px;text-align:right">${L('reports.profit_loss_report.table_expenses','Expenses')}</th>
+                <th style="padding:8px;text-align:right">${L('reports.profit_loss_report.table_net','Net')}</th>
               </tr>
             </thead>
             <tbody>
               ${htmlRows}
               <tr class="totals">
-                <td style="padding:8px;border:1px solid #ddd">Total</td>
+                <td style="padding:8px;border:1px solid #ddd">${L('reports.profit_loss_report.total_label','Total')}</td>
                 <td style="padding:8px;border:1px solid #ddd;text-align:right">${formatCurrency(totals.revenue)}</td>
                 <td style="padding:8px;border:1px solid #ddd;text-align:right">${formatCurrency(totals.expenses)}</td>
                 <td style="padding:8px;border:1px solid #ddd;text-align:right">${formatCurrency(totals.net)}</td>
@@ -107,18 +119,18 @@ export function ProfitLossReport({ reports = {} }) {
 
     const w = window.open("", "_blank");
     if (!w) {
-      alert("Unable to open print window. Check popup blocker.");
+      alert(L('reports.profit_loss_report.print_blocked','Unable to open print window. Check popup blocker.'));
       return;
     }
     try {
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const newWin = window.open(url, '_blank');
-      if (!newWin) { URL.revokeObjectURL(url); return alert('Unable to open print window. Check popup blocker.'); }
+      if (!newWin) { URL.revokeObjectURL(url); return alert(L('reports.profit_loss_report.print_blocked','Unable to open print window. Check popup blocker.')); }
       setTimeout(() => { try { newWin.print(); } catch (err) { console.error('Print failed', err); alert('Print failed. Please try manually from the new tab.'); } try { URL.revokeObjectURL(url); } catch (e) {} }, 300);
     } catch (err) {
       console.error('Failed to prepare print window', err);
-      alert('Unable to open print window. Check popup blocker.');
+      alert(L('reports.profit_loss_report.print_blocked','Unable to open print window. Check popup blocker.'));
     }
   };
 
@@ -126,11 +138,11 @@ export function ProfitLossReport({ reports = {} }) {
     <div className="bg-white dark:bg-[#1E1E1E] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Profit & Loss</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Revenue minus expenses per day and net profit for the selected period.</p>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{L('reports.profit_loss_report.heading','Profit & Loss')}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{L('reports.profit_loss_report.description','Revenue minus expenses per day and net profit for the selected period.')}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handlePrint} className="rounded-md bg-blue-600 px-3 py-1 text-white text-sm">Print</button>
+          <button onClick={handlePrint} className="rounded-md bg-blue-600 px-3 py-1 text-white text-sm">{L('reports.profit_loss_report.print','Print')}</button>
         </div>
       </div>
 
@@ -138,10 +150,10 @@ export function ProfitLossReport({ reports = {} }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500 uppercase tracking-wide">
-              <th className="px-3 py-2">Date</th>
-              <th className="px-3 py-2 text-right">Revenue</th>
-              <th className="px-3 py-2 text-right">Expenses</th>
-              <th className="px-3 py-2 text-right">Net</th>
+              <th className="px-3 py-2">{L('reports.profit_loss_report.table_date','Date')}</th>
+              <th className="px-3 py-2 text-right">{L('reports.profit_loss_report.table_revenue','Revenue')}</th>
+              <th className="px-3 py-2 text-right">{L('reports.profit_loss_report.table_expenses','Expenses')}</th>
+              <th className="px-3 py-2 text-right">{L('reports.profit_loss_report.table_net','Net')}</th>
             </tr>
           </thead>
           <tbody>
@@ -154,7 +166,7 @@ export function ProfitLossReport({ reports = {} }) {
               </tr>
             ))}
             <tr className="border-t border-gray-200 font-bold">
-              <td className="px-3 py-2">Total</td>
+              <td className="px-3 py-2">{L('reports.profit_loss_report.total_label','Total')}</td>
               <td className="px-3 py-2 text-right">{formatCurrency(totals.revenue)}</td>
               <td className="px-3 py-2 text-right">{formatCurrency(totals.expenses)}</td>
               <td className="px-3 py-2 text-right">{formatCurrency(totals.net)}</td>

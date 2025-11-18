@@ -3,10 +3,15 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useProductTransactions } from "@/hooks/useProductTransactions";
+import { useI18n } from '@/i18n';
 
 function formatCurrency(n) {
-  if (typeof n !== "number" || Number.isNaN(n)) return "$0";
-  return `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  if (typeof n !== "number" || Number.isNaN(n)) return new Intl.NumberFormat(navigator.language, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(0);
+  try {
+    return new Intl.NumberFormat(navigator.language, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n);
+  } catch (err) {
+    return `$${Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  }
 }
 
 function isProductionTransaction(t) {
@@ -28,6 +33,7 @@ function isProductionTransaction(t) {
 
 export function ProductionTransactionsReport({ start, end }) {
   const [productId, setProductId] = useState("");
+  const { t } = useI18n();
 
   const { data: products = [] } = useQuery({
     queryKey: ["products:min"],
@@ -57,12 +63,12 @@ export function ProductionTransactionsReport({ start, end }) {
   }, [data]);
 
   const handlePrint = () => {
-    const title = "Production Transactions";
+    const title = t('production.transactions.title');
     const rowsHtml = productionRows
-      .map((t) => {
+      .map((trx) => {
         let metaId = "";
         try {
-          const m = t.metadata || {};
+          const m = trx.metadata || {};
           if (typeof m === "string") {
             const p = JSON.parse(m || "{}");
             metaId = p.production_order_id ?? "";
@@ -72,13 +78,15 @@ export function ProductionTransactionsReport({ start, end }) {
         } catch (err) {
           metaId = "";
         }
+        const rawTypeKey = `production.transactions.type_${String(trx.type || "").replace(/[^a-z0-9_]/gi, "_")}`;
+        const localizedType = (t(rawTypeKey) === rawTypeKey) ? (trx.type ?? "") : t(rawTypeKey);
         return `
           <tr>
-            <td style="padding:8px;border:1px solid #ddd">${t.created_at ? new Date(t.created_at).toLocaleString() : "-"}</td>
-            <td style="padding:8px;border:1px solid #ddd">${t.product_name ?? t.product_id}</td>
-            <td style="padding:8px;border:1px solid #ddd">${t.type}</td>
-            <td style="padding:8px;border:1px solid #ddd;text-align:right">${Number(t.quantity ?? 0)}</td>
-            <td style="padding:8px;border:1px solid #ddd">${t.reason ?? ""}</td>
+            <td style="padding:8px;border:1px solid #ddd">${trx.created_at ? new Date(trx.created_at).toLocaleString() : t('production.transactions.empty')}</td>
+            <td style="padding:8px;border:1px solid #ddd">${trx.product_name ?? trx.product_id}</td>
+            <td style="padding:8px;border:1px solid #ddd">${localizedType}</td>
+            <td style="padding:8px;border:1px solid #ddd;text-align:right">${Number(trx.quantity ?? 0)}</td>
+            <td style="padding:8px;border:1px solid #ddd">${trx.reason ?? t('production.transactions.empty')}</td>
             <td style="padding:8px;border:1px solid #ddd">${metaId}</td>
           </tr>
         `;
@@ -99,16 +107,16 @@ export function ProductionTransactionsReport({ start, end }) {
         </head>
         <body>
           <h1>${title}</h1>
-          <p>Generated: ${new Date().toLocaleString()}</p>
+          <p>${t('production.transactions.generated')}: ${new Date().toLocaleString()}</p>
           <table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Product</th>
-                <th>Type</th>
-                <th style="text-align:right">Quantity</th>
-                <th>Reason</th>
-                <th>Production Order</th>
+                <th>${t('production.transactions.header_date')}</th>
+                <th>${t('production.transactions.header_product')}</th>
+                <th>${t('production.transactions.header_type')}</th>
+                <th style="text-align:right">${t('production.transactions.header_quantity')}</th>
+                <th>${t('production.transactions.header_reason')}</th>
+                <th>${t('production.transactions.header_production_order')}</th>
               </tr>
             </thead>
             <tbody>
@@ -120,19 +128,19 @@ export function ProductionTransactionsReport({ start, end }) {
     `;
 
     const w = window.open("", "_blank");
-    if (!w) {
-      alert("Unable to open print window. Check popup blocker.");
+      if (!w) {
+      alert(t('production.transactions.print_blocked'));
       return;
     }
     try {
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const newWin = window.open(url, '_blank');
-      if (!newWin) { URL.revokeObjectURL(url); return alert('Unable to open print window. Check popup blocker.'); }
-      setTimeout(() => { try { newWin.print(); } catch (err) { console.error('Print failed', err); alert('Print failed. Please try manually from the new tab.'); } try { URL.revokeObjectURL(url); } catch (e) {} }, 300);
+      if (!newWin) { URL.revokeObjectURL(url); return alert(t('production.transactions.print_blocked')); }
+      setTimeout(() => { try { newWin.print(); } catch (err) { console.error('Print failed', err); alert(t('production.transactions.print_failed')); } try { URL.revokeObjectURL(url); } catch (e) {} }, 300);
     } catch (err) {
       console.error('Failed to prepare print window', err);
-      alert('Unable to open print window. Check popup blocker.');
+      alert(t('production.transactions.print_blocked'));
     }
   };
 
@@ -140,45 +148,45 @@ export function ProductionTransactionsReport({ start, end }) {
     <div className="bg-white dark:bg-[#1E1E1E] rounded-lg border border-gray-200 dark:border-gray-800 p-6 space-y-4">
       <div className="flex flex-col md:flex-row md:items-end gap-3">
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Product</label>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('production.transactions.product_label')}</label>
           <select value={productId} onChange={(e) => setProductId(e.target.value)} className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121212] px-2 py-1 text-sm">
-            <option value="">All</option>
+            <option value="">{t('production.transactions.all')}</option>
             {products.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
           </select>
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          <div className="text-xs text-gray-500">Range:</div>
-          <div className="text-sm text-gray-700">{start ?? "-"} → {end ?? "-"}</div>
+          <div className="ml-auto flex items-center gap-2">
+          <div className="text-xs text-gray-500">{t('production.transactions.range_label')}</div>
+          <div className="text-sm text-gray-700">{start ?? t('production.transactions.empty')} {t('production.transactions.range_arrow')} {end ?? t('production.transactions.empty')}</div>
           <div className="ml-2">
-            <button onClick={handlePrint} className="rounded-md bg-blue-600 px-3 py-1 text-white text-sm">Print</button>
+            <button onClick={handlePrint} className="rounded-md bg-blue-600 px-3 py-1 text-white text-sm">{t('production.transactions.print')}</button>
           </div>
         </div>
       </div>
 
-      {error ? <div className="text-sm text-red-600 dark:text-red-400">{error.message || "Failed to load transactions"}</div> : null}
+      {error ? <div className="text-sm text-red-600 dark:text-red-400">{error.message || t('production.transactions.failed_load')}</div> : null}
 
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="text-left text-gray-600 dark:text-gray-300">
-              <th className="py-2 pr-4">Date</th>
-              <th className="py-2 pr-4">Product</th>
-              <th className="py-2 pr-4">Type</th>
-              <th className="py-2 pr-4">Quantity</th>
-              <th className="py-2 pr-4">Reason</th>
-              <th className="py-2 pr-4">Production Order</th>
+              <th className="py-2 pr-4">{t('production.transactions.header_date')}</th>
+              <th className="py-2 pr-4">{t('production.transactions.header_product')}</th>
+              <th className="py-2 pr-4">{t('production.transactions.header_type')}</th>
+              <th className="py-2 pr-4">{t('production.transactions.header_quantity')}</th>
+              <th className="py-2 pr-4">{t('production.transactions.header_reason')}</th>
+              <th className="py-2 pr-4">{t('production.transactions.header_production_order')}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td className="py-3 text-gray-500 dark:text-gray-400" colSpan={6}>Loading...</td></tr>
+              <tr><td className="py-3 text-gray-500 dark:text-gray-400" colSpan={6}>{t('production.transactions.loading')}</td></tr>
             ) : productionRows.length === 0 ? (
-              <tr><td className="py-3 text-gray-500 dark:text-gray-400" colSpan={6}>No production transactions found</td></tr>
+              <tr><td className="py-3 text-gray-500 dark:text-gray-400" colSpan={6}>{t('production.transactions.no_data')}</td></tr>
             ) : (
-              productionRows.map((t) => {
+              productionRows.map((trx) => {
                 let metaId = "";
                 try {
-                  const m = t.metadata || {};
+                  const m = trx.metadata || {};
                   if (typeof m === "string") {
                     const p = JSON.parse(m || "{}");
                     metaId = p.production_order_id ?? "";
@@ -186,13 +194,15 @@ export function ProductionTransactionsReport({ start, end }) {
                     metaId = m.production_order_id ?? "";
                   }
                 } catch (err) { metaId = ""; }
+                const rawTypeKey = `production.transactions.type_${String(trx.type || "").replace(/[^a-z0-9_]/gi, "_")}`;
+                const localizedType = (t(rawTypeKey) === rawTypeKey) ? (trx.type ?? "") : t(rawTypeKey);
                 return (
-                  <tr key={t.id} className="border-t border-gray-100 dark:border-gray-800">
-                    <td className="py-2 pr-4">{t.created_at ? new Date(t.created_at).toLocaleString() : "-"}</td>
-                    <td className="py-2 pr-4">{t.product_name ?? t.product_id}</td>
-                    <td className="py-2 pr-4 capitalize">{t.type}</td>
-                    <td className="py-2 pr-4">{Number(t.quantity ?? 0)}</td>
-                    <td className="py-2 pr-4">{t.reason || ""}</td>
+                  <tr key={trx.id} className="border-t border-gray-100 dark:border-gray-800">
+                    <td className="py-2 pr-4">{trx.created_at ? new Date(trx.created_at).toLocaleString() : t('production.transactions.empty')}</td>
+                    <td className="py-2 pr-4">{trx.product_name ?? trx.product_id}</td>
+                    <td className="py-2 pr-4">{localizedType}</td>
+                    <td className="py-2 pr-4">{Number(trx.quantity ?? 0)}</td>
+                    <td className="py-2 pr-4">{trx.reason || t('production.transactions.empty')}</td>
                     <td className="py-2 pr-4">{metaId}</td>
                   </tr>
                 );

@@ -1,24 +1,26 @@
 import { Package, ShoppingCart, DollarSign } from "lucide-react";
 import { FEATURE_KEYS } from "@/constants/featureFlags";
+import { useI18n } from '@/i18n';
 
 export function QuickActions({ onActionClick, features }) {
+  const { t } = useI18n();
   const actions = [
     {
       id: "stock",
       icon: Package,
-      label: "Manage Stock",
+      label: t('quick_actions.manage_stock'),
       feature: FEATURE_KEYS.STOCK,
     },
     {
       id: "sales",
       icon: ShoppingCart,
-      label: "Record Sale",
+      label: t('quick_actions.record_sale'),
       feature: FEATURE_KEYS.SALES,
     },
     {
       id: "expenses",
       icon: DollarSign,
-      label: "Add Expense",
+      label: t('quick_actions.add_expense'),
       feature: FEATURE_KEYS.EXPENSES,
     },
   ];

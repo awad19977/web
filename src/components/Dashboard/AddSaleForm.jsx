@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useI18n } from '@/i18n';
 
 export function AddSaleForm({
   products,
@@ -18,6 +19,16 @@ export function AddSaleForm({
     damage_reason: "",
   });
   const [formError, setFormError] = useState(null);
+  const { t } = useI18n();
+  const L = (key, fallback) => {
+    try {
+      const v = t(key);
+      if (!v || v === key) return fallback;
+      return v;
+    } catch (err) {
+      return fallback;
+    }
+  };
 
   const selectedProduct = useMemo(
     () => products.find((product) => String(product.id) === formData.product_id),
@@ -55,7 +66,7 @@ export function AddSaleForm({
     const qty = parseFloat(formData.quantity || "0");
     const damagedQty = parseFloat(formData.damaged_quantity || "0") || 0;
     if (damagedQty > qty) {
-      setFormError("Damaged quantity cannot exceed sold quantity");
+      setFormError(L('add_sale.error.damaged_exceeds', 'Damaged quantity cannot exceed sold quantity'));
       return;
     }
     setFormError(null);
@@ -84,12 +95,12 @@ export function AddSaleForm({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-[#1E1E1E] rounded-lg p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-          Record Sale
+          {L('add_sale.title', 'Record Sale')}
         </h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Product
+              {L('add_sale.product', 'Product')}
             </label>
             <select
               required
@@ -100,14 +111,14 @@ export function AddSaleForm({
             >
               <option value="">
                 {productsLoading
-                  ? "Loading products..."
+                  ? L('add_sale.loading_products', 'Loading products...')
                   : productsError
-                    ? "Failed to load products"
-                    : "Select a product"}
+                    ? L('add_sale.failed_load_products', 'Failed to load products')
+                    : L('add_sale.select_product', 'Select a product')}
               </option>
               {products.map((product) => (
                 <option key={product.id} value={String(product.id)}>
-                  {product.name} (In stock: {product.current_stock})
+                  {product.name} ({L('add_sale.in_stock', `In stock: ${product.current_stock}`).replace('{count}', String(product.current_stock))})
                 </option>
               ))}
             </select>
@@ -116,7 +127,7 @@ export function AddSaleForm({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Quantity
+                {L('add_sale.quantity', 'Quantity')}
               </label>
               <input
                 type="number"
@@ -129,13 +140,13 @@ export function AddSaleForm({
               />
               {formData.quantity && selectedProduct ? (
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Available: {availableStock}
+                  {L('add_sale.available', 'Available: {count}').replace('{count}', String(availableStock))}
                 </p>
               ) : null}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Unit Price ($)
+                {L('add_sale.unit_price', 'Unit Price ($)')}
               </label>
               <input
                 type="number"
@@ -154,20 +165,20 @@ export function AddSaleForm({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Customer Name
+              {L('add_sale.customer_name', 'Customer Name')}
             </label>
             <input
               type="text"
               value={formData.customer_name}
               onChange={handleChange("customer_name")}
-              placeholder="Optional"
+              placeholder={L('add_sale.optional', 'Optional')}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#262626] text-gray-900 dark:text-white"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Notes
+              {L('add_sale.notes', 'Notes')}
             </label>
             <textarea
               value={formData.notes}
@@ -180,7 +191,7 @@ export function AddSaleForm({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Damaged Quantity (optional)
+                {L('add_sale.damaged_quantity', 'Damaged Quantity (optional)')}
               </label>
               <input
                 type="number"
@@ -189,30 +200,30 @@ export function AddSaleForm({
                 value={formData.damaged_quantity}
                 onChange={handleChange("damaged_quantity")}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#262626] text-gray-900 dark:text-white"
-                placeholder="e.g. 2"
+                placeholder={L('add_sale.example_placeholder', 'e.g. 2')}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Damage Reason (optional)
+                {L('add_sale.damage_reason', 'Damage Reason (optional)')}
               </label>
               <input
                 type="text"
                 value={formData.damage_reason}
                 onChange={handleChange("damage_reason")}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#262626] text-gray-900 dark:text-white"
-                placeholder="Optional reason"
+                placeholder={L('add_sale.optional', 'Optional')}
               />
             </div>
           </div>
 
           <div className="bg-gray-50 dark:bg-[#262626] p-3 rounded-md">
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Total Amount: <span className="font-bold text-gray-900 dark:text-white">${totalAmount.toFixed(2)}</span>
+              {L('add_sale.total_amount', 'Total Amount')}: <span className="font-bold text-gray-900 dark:text-white">${totalAmount.toFixed(2)}</span>
             </div>
             {selectedProduct ? (
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Available stock for {selectedProduct.name}: {availableStock}
+                {L('add_sale.available_for_product', 'Available stock for {name}: {count}').replace('{name}', selectedProduct.name).replace('{count}', String(availableStock))}
               </div>
             ) : null}
           </div>
@@ -223,7 +234,7 @@ export function AddSaleForm({
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
             >
-              Cancel
+              {L('add_sale.cancel', 'Cancel')}
             </button>
             <button
               type="submit"
@@ -236,7 +247,7 @@ export function AddSaleForm({
               }
               className="flex-1 px-4 py-2 bg-[#18B84E] dark:bg-[#16A249] text-white rounded-md hover:bg-[#16A249] dark:hover:bg-[#14D45D] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Recording..." : "Save Sale"}
+              {loading ? L('add_sale.recording', 'Recording...') : L('add_sale.save', 'Save Sale')}
             </button>
           </div>
         </form>

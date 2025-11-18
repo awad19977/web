@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useI18n } from '@/i18n';
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 const isPositiveNumber = (value) => {
@@ -59,6 +60,7 @@ export function CreateProductionOrderForm({
     quantity: "",
   });
   const [validationError, setValidationError] = useState(null);
+  const { t } = useI18n();
 
   const selectedProduct = useMemo(() => {
     if (!formState.productId) return null;
@@ -79,12 +81,12 @@ export function CreateProductionOrderForm({
     event.preventDefault();
 
     if (!formState.productId) {
-      setValidationError("Please choose a product to produce");
+      setValidationError(t('production.form.validation.choose_product'));
       return;
     }
 
     if (!isPositiveNumber(formState.quantity)) {
-      setValidationError("Enter a quantity greater than zero");
+      setValidationError(t('production.form.validation.quantity_positive'));
       return;
     }
 
@@ -99,25 +101,25 @@ export function CreateProductionOrderForm({
   return (
     <div className="bg-white shadow-lg rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
       <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Create Production Order</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t('production.form.title')}</h3>
         <button
           type="button"
           onClick={onClose}
           className="text-sm text-gray-500 hover:text-gray-700"
         >
-          Close
+          {t('production.form.close')}
         </button>
       </div>
       <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
         {productsLoading ? (
           <div className="flex items-center text-gray-600">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Loading products…
+            {t('production.form.loading_products')}
           </div>
         ) : (
           <div>
             <label htmlFor="productId" className="block text-sm font-medium text-gray-700">
-              Product
+              {t('production.form.product_label')}
             </label>
             <select
               id="productId"
@@ -128,7 +130,7 @@ export function CreateProductionOrderForm({
               disabled={isSubmitting}
               required
             >
-              <option value="">Select a product…</option>
+              <option value="">{t('production.form.select_product')}</option>
               {products.map((product) => (
                 <option key={product.id} value={product.id}>
                   {product.name}
@@ -140,7 +142,7 @@ export function CreateProductionOrderForm({
 
         <div>
           <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
-            Quantity to produce
+            {t('production.form.quantity_label')}
           </label>
           <input
             id="quantity"
@@ -151,7 +153,7 @@ export function CreateProductionOrderForm({
             value={formState.quantity}
             onChange={handleChange}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            placeholder="Enter planned quantity"
+            placeholder={t('production.form.quantity_placeholder')}
             disabled={isSubmitting}
             required
           />
@@ -160,14 +162,14 @@ export function CreateProductionOrderForm({
         {selectedProduct && selectedProduct.recipes && selectedProduct.recipes.length === 0 && (
           <div className="flex items-start rounded-md bg-yellow-50 p-3 text-sm text-yellow-700">
             <AlertTriangle className="mr-2 mt-0.5 h-4 w-4" />
-            This product does not have a recipe yet. Add one before starting production.
+            {t('production.form.no_recipe')}
           </div>
         )}
 
         {ingredients.length > 0 && (
           <div className="rounded-lg border border-gray-200">
             <div className="bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700">
-              Ingredients needed
+              {t('production.form.ingredients_title')}
             </div>
             <ul className="divide-y divide-gray-200">
               {ingredients.map((ingredient) => (
@@ -175,20 +177,23 @@ export function CreateProductionOrderForm({
                   <div>
                     <p className="font-medium text-gray-900">{ingredient.name}</p>
                     <p className="text-gray-600">
-                      {quantityFormatter.format(ingredient.perUnit)} per unit × {quantityFormatter.format(Number(formState.quantity) || 0)} units
+                      {t('production.form.per_unit', {
+                        perUnit: quantityFormatter.format(ingredient.perUnit),
+                        units: quantityFormatter.format(Number(formState.quantity) || 0),
+                      })}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-gray-600">Total: {quantityFormatter.format(ingredient.total)}</p>
+                    <p className="text-gray-600">{t('production.form.total')}: {quantityFormatter.format(ingredient.total)}</p>
                     <p className="text-gray-500">
-                      Cost: {currencyFormatter.format(ingredient.cost)}
+                      {t('production.form.cost')}: {currencyFormatter.format(ingredient.cost)}
                     </p>
                   </div>
                 </li>
               ))}
             </ul>
             <div className="flex items-center justify-between bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-900">
-              <span>Estimated production cost</span>
+              <span>{t('production.form.estimated_production_cost')}</span>
               <span>{currencyFormatter.format(estimatedCost)}</span>
             </div>
           </div>
@@ -215,7 +220,7 @@ export function CreateProductionOrderForm({
             className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
             disabled={isSubmitting}
           >
-            Cancel
+            {t('production.form.cancel')}
           </button>
           <button
             type="submit"
@@ -225,10 +230,10 @@ export function CreateProductionOrderForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating…
+                {t('production.form.creating')}
               </>
             ) : (
-              "Create order"
+              t('production.form.create')
             )}
           </button>
         </div>

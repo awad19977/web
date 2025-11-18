@@ -33,6 +33,7 @@ import { HotReloadIndicator } from '../__create/HotReload';
 import { useSandboxStore } from '../__create/hmr-sandbox-store';
 import type { Route } from './+types/root';
 import { useDevServerHeartbeat } from '../__create/useDevServerHeartbeat';
+import { I18nProvider } from '@/i18n';
 
 export const links = () => [];
 
@@ -366,8 +367,12 @@ export function Layout({ children }: { children: ReactNode }) {
       );
     }
   }, [pathname]);
+  const defaultLocale = process.env.NEXT_PUBLIC_DEFAULT_LOCALE || 'en';
+
+  const htmlDir = defaultLocale === 'ar' ? 'rtl' : 'ltr';
+
   return (
-    <html lang="en">
+    <html lang={defaultLocale} dir={htmlDir}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -378,7 +383,9 @@ export function Layout({ children }: { children: ReactNode }) {
         <LoadFonts />
       </head>
       <body>
-        <ClientOnly loader={() => children} />
+        <I18nProvider defaultLocale={defaultLocale}>
+          <ClientOnly loader={() => children} />
+        </I18nProvider>
         <HotReloadIndicator />
         <Toaster position="bottom-right" />
         <ScrollRestoration />
