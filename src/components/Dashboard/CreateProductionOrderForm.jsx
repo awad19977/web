@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useI18n } from '@/i18n';
 import { AlertTriangle, Loader2 } from "lucide-react";
+import formatCurrency from '@/utils/formatCurrency';
 
 const isPositiveNumber = (value) => {
   const number = Number(value);
@@ -11,11 +12,7 @@ const quantityFormatter = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 2,
 });
 
-const currencyFormatter = new Intl.NumberFormat(undefined, {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
+// Use shared formatCurrency util
 
 const computeRecipeBreakdown = (product, quantity) => {
   if (!product || !Array.isArray(product.recipes) || product.recipes.length === 0) {
@@ -186,7 +183,7 @@ export function CreateProductionOrderForm({
                   <div className="text-right">
                     <p className="text-gray-600">{t('production.form.total')}: {quantityFormatter.format(ingredient.total)}</p>
                     <p className="text-gray-500">
-                      {t('production.form.cost')}: {currencyFormatter.format(ingredient.cost)}
+                      {t('production.form.cost')}: {formatCurrency(ingredient.cost)}
                     </p>
                   </div>
                 </li>
@@ -194,7 +191,7 @@ export function CreateProductionOrderForm({
             </ul>
             <div className="flex items-center justify-between bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-900">
               <span>{t('production.form.estimated_production_cost')}</span>
-              <span>{currencyFormatter.format(estimatedCost)}</span>
+              <span>{formatCurrency(estimatedCost)}</span>
             </div>
           </div>
         )}

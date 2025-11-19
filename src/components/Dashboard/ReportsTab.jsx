@@ -1,6 +1,7 @@
 import { FEATURE_KEYS } from "@/constants/featureFlags";
 import { SummaryCard } from "./SummaryCard";
 import { useI18n } from '@/i18n';
+import formatCurrency from '@/utils/formatCurrency';
 import { StockTransactionsReport } from "./StockTransactionsReport";
 import { ProductTransactionsReport } from "./ProductTransactionsReport";
 import ProductionTransactionsReport from "./ProductionTransactionsReport";
@@ -18,12 +19,7 @@ function StatBlock({ label, value, helpText }) {
     </div>
   );
 }
-function formatCurrency(number) {
-  if (typeof number !== "number" || Number.isNaN(number)) {
-    return "$0";
-  }
-  return `$${number.toLocaleString()}`;
-}
+// Use shared currency formatter (SDG) from utils
 
 export function ReportsTab({ reports, reportsLoading, features, start, end, setStart, setEnd }) {
   const hasReportsAccess = features?.[FEATURE_KEYS.REPORTS] !== false;

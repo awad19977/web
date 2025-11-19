@@ -1,5 +1,6 @@
 import { useI18n } from "@/i18n";
 import { useCallback } from "react";
+import formatCurrency from '@/utils/formatCurrency';
 export function SalesTable({ sales, loading, error }) {
   if (error) {
     return (
@@ -105,16 +106,10 @@ const { t } = useI18n();
                       ) : null}
                     </td>
                     <td className="px-6 py-4 text-gray-900 dark:text-white">
-                      ${unitPrice.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {formatCurrency(unitPrice)}
                     </td>
                     <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">
-                      ${totalAmount.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {formatCurrency(totalAmount)}
                     </td>
                     <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                       {sale.customer_name || L('sales_management.customer', 'Walk-in')}

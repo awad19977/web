@@ -49,7 +49,7 @@
   "stock_table": {
     "item": "البند",
     "current_stock": "المخزون الحالي",
-    "unit_cost": "تكلفة الوحدة",
+    "unit_cost": "تكلفة الوحدة (SDG)",
     "supplier": "المورد",
     "actions": "الإجراءات",
     "purchase": "شراء",
@@ -238,7 +238,7 @@
     "available": "مُتاح: {count}",
     "available_for_product": "المخزون المتاح لـ {name}: {count}",
     "quantity": "الكمية",
-    "unit_price": "سعر الوحدة ($)",
+    "unit_price": "سعر الوحدة (SDG)",
     "customer_name": "اسم العميل",
     "notes": "ملاحظات",
     "damaged_quantity": "كمية تالفة (اختياري)",
@@ -480,7 +480,7 @@
     "select_base_unit": "اختر الوحدة الأساسية",
     "no_units_available": "لا توجد وحدات متاحة",
     "no_units_found_message": "لا توجد وحدات. أضف وحدات في كتالوج الوحدات قبل إنشاء المنتج.",
-    "unit_cost": "تكلفة الوحدة ($)",
+    "unit_cost": "تكلفة الوحدة (SDG)",
     "supplier": "المورد",
     "allow_extra_production": "السماح بالإنتاج الإضافي",
     "allow_extra_production_help": "تمكين هذا المنتج ليُطلب بما يتجاوز متطلبات الوصفة أثناء الإنتاج، بحد أقصى لكل طلب.",
@@ -507,7 +507,7 @@
     "notes": "ملاحظات",
     "base_unit_label": "الوحدات الأساسية",
     "base_suffix": " (أساسي)",
-    "currency_symbol": "$",
+    "currency_symbol": "SDG",
     "unit_conversion": "1 {unit} = {factor} {baseUnit}",
     "base_quantity": "الكمية بالوحدة الأساسية",
     "cost_per_base_unit": "التكلفة لكل وحدة أساسية",
@@ -541,7 +541,7 @@
       "no_data": "لا توجد بيانات أداء للمنتجات بعد."
     },
     "sold": "تم بيعها",
-    "margin_label": "الهامش: {value}%",
+        "selling_price": "سعر البيع (SDG)",
     "stock_transactions_help": "تصفية ومراجعة حركة المخزون لكل بند.",
     "product_transactions_help": "تتبع الزيادات من الإنتاج والنقص من المبيعات.",
     "production_transactions_help": "قائمة مخرجات الإنتاج والإخفاقات المرتبطة بأوامر الإنتاج.",
@@ -593,7 +593,7 @@
     "labels": {
       "name": "اسم المنتج",
       "description": "الوصف",
-      "selling_price": "سعر البيع ($)",
+      "selling_price": "سعر البيع (SDG)",
       "current_stock": "المخزون الحالي"
     },
     "placeholders": {
@@ -619,7 +619,7 @@
     "labels": {
       "category": "الفئة",
       "description": "الوصف",
-      "amount": "المبلغ ($)",
+      "amount": "المبلغ (SDG)",
       "expense_date": "تاريخ المصروف",
       "notes": "ملاحظات"
     },

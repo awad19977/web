@@ -4,15 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useProductTransactions } from "@/hooks/useProductTransactions";
 import { useI18n } from '@/i18n';
-
-function formatCurrency(n) {
-  if (typeof n !== "number" || Number.isNaN(n)) return new Intl.NumberFormat(navigator.language, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(0);
-  try {
-    return new Intl.NumberFormat(navigator.language, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n);
-  } catch (err) {
-    return `$${Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-  }
-}
+import formatCurrency from '@/utils/formatCurrency';
 
 function isProductionTransaction(t) {
   const reason = String(t.reason || "").toLowerCase();

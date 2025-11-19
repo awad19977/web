@@ -1,13 +1,8 @@
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { useI18n } from '@/i18n';
+import formatCurrency from '@/utils/formatCurrency';
 
 const numberFormatter = new Intl.NumberFormat(undefined, {
-  maximumFractionDigits: 2,
-});
-
-const currencyFormatter = new Intl.NumberFormat(undefined, {
-  style: "currency",
-  currency: "USD",
   maximumFractionDigits: 2,
 });
 
@@ -155,7 +150,7 @@ export function ProductionOrdersTable({
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-                  {currencyFormatter.format(order.production_cost ?? 0)}
+                  {formatCurrency(order.production_cost ?? 0)}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
                   {formatDateTime(order.started_at)}

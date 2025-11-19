@@ -4,12 +4,7 @@ import { useExpenseManagement } from "@/hooks/useExpenseManagement";
 import { ExpenseTable } from "./ExpenseTable";
 import { AddExpenseForm } from "./AddExpenseForm";
 import { useI18n } from '@/i18n';
-
-const currencyFormatter = new Intl.NumberFormat(undefined, {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
+import formatCurrency from '@/utils/formatCurrency';
 
 export function ExpenseManagementTab() {
   const { t } = useI18n();
@@ -37,14 +32,14 @@ export function ExpenseManagementTab() {
     addExpense(data, {
       onSuccess: (result) => {
         setShowAddForm(false);
-        setFeedback({
+              setFeedback({
           type: "success",
           message: L(
             'expense_management.logged',
             'Logged {desc} for {amount}',
             {
               desc: result?.description || L('expense_management.logged_default', 'expense'),
-              amount: currencyFormatter.format(result?.amount ?? data.amount ?? 0),
+              amount: formatCurrency(result?.amount ?? data.amount ?? 0),
             }
           ),
         });

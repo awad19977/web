@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useI18n } from '@/i18n';
+import formatCurrency from '@/utils/formatCurrency';
 import {
   convertPriceFromBase,
   convertPriceToBase,
@@ -272,13 +273,13 @@ export function PurchaseStockForm({ stock, onClose, onSubmit, loading }) {
             <div className="text-sm text-gray-600 dark:text-gray-400">
               {t('purchase.cost_per_base_unit')}: {" "}
               <span className="font-bold text-gray-900 dark:text-white">
-                {L('purchase.currency_symbol', '$')}{Number.isFinite(baseUnitCost) ? baseUnitCost.toFixed(2) : "0.00"}
+                {formatCurrency(Number.isFinite(baseUnitCost) ? baseUnitCost : 0)}
               </span>
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
               {t('purchase.total_cost')}: {" "}
               <span className="font-bold text-gray-900 dark:text-white">
-                {L('purchase.currency_symbol', '$')}{totalCost.toFixed(2)}
+                {formatCurrency(totalCost)}
               </span>
             </div>
           </div>

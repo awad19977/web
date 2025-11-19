@@ -2,6 +2,7 @@ import { QuickActions } from "./QuickActions";
 import { SummaryCard } from "./SummaryCard";
 import { FEATURE_KEYS } from "@/constants/featureFlags";
 import { useI18n } from '@/i18n';
+import formatCurrency from '@/utils/formatCurrency';
 
 export function OverviewTab({ reports, reportsLoading, onTabChange, features = {} }) {
   const hasReportsAccess = features[FEATURE_KEYS.REPORTS] !== false;
@@ -24,28 +25,28 @@ export function OverviewTab({ reports, reportsLoading, onTabChange, features = {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <SummaryCard
             title={t('overview.total_revenue')}
-            value={`$${reports?.summary?.totalRevenue?.toLocaleString() || "0"}`}
+            value={formatCurrency(reports?.summary?.totalRevenue ?? 0)}
             change="+12.5%"
             positive={true}
             loading={reportsLoading}
           />
           <SummaryCard
             title={t('overview.net_profit')}
-            value={`$${reports?.summary?.netProfit?.toLocaleString() || "0"}`}
+            value={formatCurrency(reports?.summary?.netProfit ?? 0)}
             change={`${reports?.summary?.profitMargin?.toFixed(1) || "0"}%`}
             positive={reports?.summary?.netProfit >= 0}
             loading={reportsLoading}
           />
           <SummaryCard
             title={t('overview.stock_value')}
-            value={`$${reports?.summary?.stockValue?.toLocaleString() || "0"}`}
+            value={formatCurrency(reports?.summary?.stockValue ?? 0)}
             change="+5.2%"
             positive={true}
             loading={reportsLoading}
           />
           <SummaryCard
             title={t('overview.total_expenses')}
-            value={`$${reports?.summary?.totalCosts?.toLocaleString() || "0"}`}
+            value={formatCurrency(reports?.summary?.totalCosts ?? 0)}
             change="-3.1%"
             positive={false}
             loading={reportsLoading}

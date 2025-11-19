@@ -1,4 +1,5 @@
 import { useI18n } from '@/i18n';
+import formatCurrency from '@/utils/formatCurrency';
 
 export function StockTable({
   stock,
@@ -66,7 +67,7 @@ export function StockTable({
                   )}
                 </td>
                 <td className="px-6 py-4 text-gray-900 dark:text-white">
-                  ${item.unit_cost}
+                  {formatCurrency(Number(item.unit_cost ?? 0))}
                 </td>
                 <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                   {item.supplier || "N/A"}

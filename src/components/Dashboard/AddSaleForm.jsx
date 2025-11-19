@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useI18n } from '@/i18n';
+import formatCurrency from '@/utils/formatCurrency';
 
 export function AddSaleForm({
   products,
@@ -219,7 +220,7 @@ export function AddSaleForm({
 
           <div className="bg-gray-50 dark:bg-[#262626] p-3 rounded-md">
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              {L('add_sale.total_amount', 'Total Amount')}: <span className="font-bold text-gray-900 dark:text-white">${totalAmount.toFixed(2)}</span>
+              {L('add_sale.total_amount', 'Total Amount')}: <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(totalAmount)}</span>
             </div>
             {selectedProduct ? (
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">

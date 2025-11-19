@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useI18n } from '@/i18n';
+import formatCurrency from '@/utils/formatCurrency';
 
 function formatNumber(n) {
   if (typeof n !== "number" || Number.isNaN(n)) return "0";
@@ -40,7 +41,7 @@ export default function StockLevelsReport() {
           <td style="padding:8px;border:1px solid #ddd">${r.description ?? ""}</td>
           <td style="padding:8px;border:1px solid #ddd;text-align:right">${formatNumber(Number(r.current_quantity ?? 0))}</td>
           <td style="padding:8px;border:1px solid #ddd">${r.unit_name ?? r.base_unit_name ?? ""}</td>
-          <td style="padding:8px;border:1px solid #ddd;text-align:right">${r.unit_cost ?? ""}</td>
+          <td style="padding:8px;border:1px solid #ddd;text-align:right">${formatCurrency(Number(r.unit_cost ?? 0))}</td>
           <td style="padding:8px;border:1px solid #ddd">${r.supplier ?? ""}</td>
         </tr>
       `)
@@ -129,7 +130,7 @@ export default function StockLevelsReport() {
                   <td className="py-2 pr-4">{r.description ?? ""}</td>
                   <td className="py-2 pr-4">{formatNumber(Number(r.current_quantity ?? 0))}</td>
                   <td className="py-2 pr-4">{r.unit_name ?? r.base_unit_name ?? ""}</td>
-                  <td className="py-2 pr-4">{r.unit_cost ?? ""}</td>
+                  <td className="py-2 pr-4">{formatCurrency(Number(r.unit_cost ?? 0))}</td>
                   <td className="py-2 pr-4">{r.supplier ?? ""}</td>
                 </tr>
               ))}

@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { AlertCircle, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useI18n } from '@/i18n';
-
-const currencyFormatter = new Intl.NumberFormat(undefined, {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
+import formatCurrency from '@/utils/formatCurrency';
 
 const quantityFormatter = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 2,
@@ -219,7 +214,7 @@ export function ManageRecipeForm({
                 ? stock.find((item) => String(item.id) === row.stockId)
                 : null;
               const helperText = selectedStock
-                ? `${quantityFormatter.format(Number(selectedStock.current_quantity ?? 0))} in stock • ${currencyFormatter.format(Number(selectedStock.unit_cost ?? 0))} per ${selectedStock.unit ?? "unit"}`
+                ? `${quantityFormatter.format(Number(selectedStock.current_quantity ?? 0))} in stock • ${formatCurrency(Number(selectedStock.unit_cost ?? 0))} per ${selectedStock.unit ?? "unit"}`
                 : null;
 
               return (
@@ -249,7 +244,7 @@ export function ManageRecipeForm({
                           : null}
                       </select>
                       {helperText ? (
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('recipe.helper', { current: quantityFormatter.format(Number(selectedStock.current_quantity ?? 0)), cost: currencyFormatter.format(Number(selectedStock.unit_cost ?? 0)), unit: selectedStock.unit ?? t('recipe.unit') })}</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('recipe.helper', { current: quantityFormatter.format(Number(selectedStock.current_quantity ?? 0)), cost: formatCurrency(Number(selectedStock.unit_cost ?? 0)), unit: selectedStock.unit ?? t('recipe.unit') })}</p>
                       ) : null}
                     </div>
                     <div>
@@ -291,8 +286,8 @@ export function ManageRecipeForm({
               <Plus className="h-4 w-4" />
               {t('recipe.add_ingredient')}
             </button>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              {t('recipe.estimated_batch_cost')}: <span className="font-semibold text-gray-900 dark:text-gray-100">{currencyFormatter.format(totalCost)}</span>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+              {t('recipe.estimated_batch_cost')}: <span className="font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(totalCost)}</span>
             </div>
           </div>
 

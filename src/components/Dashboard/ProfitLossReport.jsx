@@ -1,10 +1,7 @@
 import React, { useCallback } from "react";
 import { useI18n } from '@/i18n';
 
-function formatCurrency(n) {
-  if (typeof n !== "number" || Number.isNaN(n)) return "$0";
-  return `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-}
+import { formatCurrency } from '@/utils/formatCurrency';
 
 function buildRows(salesData = [], expensesData = []) {
   const map = new Map();

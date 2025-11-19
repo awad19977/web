@@ -1,10 +1,6 @@
 import { useI18n } from "@/i18n";
 import { useCallback } from "react";
-const currencyFormatter = new Intl.NumberFormat(undefined, {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
+import formatCurrency from '@/utils/formatCurrency';
 
 const quantityFormatter = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 2,
@@ -75,9 +71,9 @@ export function ProductTable({ products = [], loading = false, onManageRecipe })
             ) : (
               products.map((product) => {
                 const currentStock = quantityFormatter.format(Number(product.current_stock ?? 0));
-                const sellingPrice = currencyFormatter.format(Number(product.selling_price ?? 0));
+                const sellingPrice = formatCurrency(Number(product.selling_price ?? 0));
                 const totalSold = quantityFormatter.format(Number(product.total_sold ?? 0));
-                const revenue = currencyFormatter.format(Number(product.total_sales ?? 0));
+                const revenue = formatCurrency(Number(product.total_sales ?? 0));
 
                 return (
                   <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
@@ -121,7 +117,7 @@ export function ProductTable({ products = [], loading = false, onManageRecipe })
                                 of <span className="text-gray-800 dark:text-gray-100">{ingredientName}</span>
                                 {cost > 0 ? (
                                   <span className="text-gray-500 dark:text-gray-400">
-                                    {" "}• {currencyFormatter.format(cost)} {L('products.product_table.per_unit', 'per unit')}
+                                    {" "}• {formatCurrency(cost)} {L('products.product_table.per_unit', 'per unit')}
                                   </span>
                                 ) : null}
                               </li>

@@ -1,8 +1,4 @@
-const currencyFormatter = new Intl.NumberFormat(undefined, {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
+import formatCurrency from '@/utils/formatCurrency';
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -75,7 +71,7 @@ const toKey = (s) =>
                   </div>
                 </td>
                 <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                  {currencyFormatter.format(expense.amount ?? 0)}
+                  {formatCurrency(expense.amount ?? 0)}
                 </td>
                 <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                   {expense.expense_date ? new Date(expense.expense_date).toLocaleDateString() : dash}

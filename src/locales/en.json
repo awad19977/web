@@ -250,7 +250,7 @@
     "select_base_unit_error": "Select a base unit from the Unit Catalog before continuing.",
     "no_units_available": "No units available",
     "no_units_found_message": "No units yet. Add units in the units catalog before creating products.",
-    "unit_cost": "Unit cost ($)",
+    "unit_cost": "Unit cost (SDG)",
     "supplier": "Supplier",
     "allow_extra_production": "Allow extra production",
     "allow_extra_production_help": "Enable this item to be requested beyond recipe requirements during production, up to a per-order cap.",
@@ -277,7 +277,7 @@
     "notes": "Notes",
     "base_unit_label": "base units",
     "base_suffix": " (base)",
-    "currency_symbol": "$",
+    "currency_symbol": "SDG",
     "unit_conversion": "1 {unit} = {factor} {baseUnit}",
     "base_quantity": "Base quantity",
     "cost_per_base_unit": "Cost per base unit",
@@ -385,7 +385,7 @@
     "available": "Available: {count}",
     "available_for_product": "Available stock for {name}: {count}",
     "quantity": "Quantity",
-    "unit_price": "Unit Price ($)",
+    "unit_price": "Unit Price (SDG)",
     "customer_name": "Customer Name",
     "notes": "Notes",
     "damaged_quantity": "Damaged Quantity (optional)",
@@ -662,7 +662,7 @@
     "labels": {
       "name": "Product Name",
       "description": "Description",
-      "selling_price": "Selling Price ($)",
+      "selling_price": "Selling Price (SDG)",
       "current_stock": "Current Stock"
     },
     "placeholders": {
@@ -688,7 +688,7 @@
     "labels": {
       "category": "Category",
       "description": "Description",
-      "amount": "Amount ($)",
+      "amount": "Amount (SDG)",
       "expense_date": "Expense date",
       "notes": "Notes"
     },
